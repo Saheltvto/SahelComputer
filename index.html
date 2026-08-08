@@ -61,8 +61,13 @@
             <stop offset="0%" stop-color="#0E4A52"/>
             <stop offset="100%" stop-color="#2FB8A6"/>
           </linearGradient>
+          <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="#8FE3D3" stop-opacity="0.35"/>
+            <stop offset="100%" stop-color="#8FE3D3" stop-opacity="0"/>
+          </radialGradient>
         </defs>
         <rect x="0" y="0" width="560" height="420" fill="url(#dotgrid)"/>
+        <circle cx="410" cy="90" r="130" fill="url(#glow)"/>
 
         <g>
           <rect x="70"  y="290" width="46" height="90"  rx="8" fill="url(#barGrad)" opacity="0.55"/>
@@ -74,29 +79,23 @@
 
         <polyline points="93,285 163,245 233,198 303,142 373,92" fill="none" stroke="#F6F7F3" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" opacity="0.9"/>
         <circle cx="373" cy="92" r="8" fill="#F6F7F3"/>
-        <circle cx="373" cy="92" r="14" fill="none" stroke="#F6F7F3" stroke-width="2" opacity="0.6"/>
+        <circle cx="373" cy="92" r="16" fill="none" stroke="#F6F7F3" stroke-width="2" opacity="0.55"/>
 
-        <g transform="translate(360,40)">
-          <rect x="0" y="0" width="150" height="72" rx="14" fill="#ffffff" opacity="0.96"/>
-          <circle cx="26" cy="36" r="16" fill="#2FB8A6" opacity="0.16"/>
-          <path d="M19 36L24 41L34 29" stroke="#178A79" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-          <rect x="52" y="22" width="82" height="9" rx="4" fill="#0B3D42" opacity="0.8"/>
-          <rect x="52" y="40" width="60" height="7" rx="3" fill="#4B6669" opacity="0.5"/>
+        <g transform="translate(415,55)">
+          <circle cx="0" cy="0" r="27" fill="#ffffff" opacity="0.95"/>
+          <path d="M-11 0L-3 8L13 -10" stroke="#178A79" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
         </g>
 
-        <g transform="translate(38,60)">
-          <circle cx="26" cy="26" r="26" fill="#F2C94C"/>
-          <text x="26" y="34" font-size="24" font-weight="800" text-anchor="middle" fill="#7A5A08" font-family="Arial, sans-serif">﷼</text>
+        <g transform="translate(80,70)" opacity="0.95">
+          <ellipse cx="0" cy="14" rx="24" ry="9" fill="#C99A2E"/>
+          <ellipse cx="0" cy="7" rx="24" ry="9" fill="#F2C94C"/>
+          <ellipse cx="0" cy="0" rx="24" ry="9" fill="#FCE18A"/>
         </g>
+
+        <circle cx="470" cy="330" r="5" fill="#8FE3D3" opacity="0.7"/>
+        <circle cx="500" cy="300" r="3.5" fill="#8FE3D3" opacity="0.5"/>
+        <circle cx="440" cy="360" r="3.5" fill="#8FE3D3" opacity="0.5"/>
       </svg>
-      <div class="hero-chip c1">
-        <svg viewBox="0 0 24 24" fill="none"><path d="M4 12L10 18L20 6" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        تنخواه همیشه شفاف
-      </div>
-      <div class="hero-chip c2">
-        <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/><path d="M12 7V12L15 14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-        دسترسی ۲۴/۷
-      </div>
     </div>
   </div>
 </section>
