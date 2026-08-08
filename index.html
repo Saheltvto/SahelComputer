@@ -29,6 +29,7 @@
     <nav class="nav-links" id="navLinks">
       <a href="#services">خدمات</a>
       <a href="#showcase">نمونه خدمات</a>
+      <a href="articles.html">مقاله‌ها</a>
       <a href="#about">درباره ما</a>
       <a href="#contact">تماس با ما</a>
       <a href="login.html" class="nav-cta">ورود</a>
@@ -52,10 +53,6 @@
       </div>
     </div>
     <div class="tide" role="img" aria-label="نمودار جریان مالی رو به رشد" style="position:relative;">
-      <div class="tide-badge">
-        <b>تنخواه هوشمند</b>
-        <span>مدیریت لحظه‌ای موجودی و اسناد مالی — متصل به گوگل شیت</span>
-      </div>
       <svg viewBox="0 0 560 420" preserveAspectRatio="xMidYMax slice" style="position:absolute; inset:0; width:100%; height:100%;">
         <defs>
           <pattern id="dotgrid" width="26" height="26" patternUnits="userSpaceOnUse">
@@ -65,8 +62,13 @@
             <stop offset="0%" stop-color="#0E4A52"/>
             <stop offset="100%" stop-color="#2FB8A6"/>
           </linearGradient>
+          <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="#8FE3D3" stop-opacity="0.35"/>
+            <stop offset="100%" stop-color="#8FE3D3" stop-opacity="0"/>
+          </radialGradient>
         </defs>
         <rect x="0" y="0" width="560" height="420" fill="url(#dotgrid)"/>
+        <circle cx="410" cy="90" r="130" fill="url(#glow)"/>
 
         <g>
           <rect x="70"  y="290" width="46" height="90"  rx="8" fill="url(#barGrad)" opacity="0.55"/>
@@ -78,56 +80,50 @@
 
         <polyline points="93,285 163,245 233,198 303,142 373,92" fill="none" stroke="#F6F7F3" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" opacity="0.9"/>
         <circle cx="373" cy="92" r="8" fill="#F6F7F3"/>
-        <circle cx="373" cy="92" r="14" fill="none" stroke="#F6F7F3" stroke-width="2" opacity="0.6"/>
+        <circle cx="373" cy="92" r="16" fill="none" stroke="#F6F7F3" stroke-width="2" opacity="0.55"/>
 
-        <g transform="translate(360,40)">
-          <rect x="0" y="0" width="150" height="72" rx="14" fill="#ffffff" opacity="0.96"/>
-          <circle cx="26" cy="36" r="16" fill="#2FB8A6" opacity="0.16"/>
-          <path d="M19 36L24 41L34 29" stroke="#178A79" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-          <rect x="52" y="22" width="82" height="9" rx="4" fill="#0B3D42" opacity="0.8"/>
-          <rect x="52" y="40" width="60" height="7" rx="3" fill="#4B6669" opacity="0.5"/>
+        <g transform="translate(415,55)">
+          <circle cx="0" cy="0" r="27" fill="#ffffff" opacity="0.95"/>
+          <path d="M-11 0L-3 8L13 -10" stroke="#178A79" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
         </g>
 
-        <g transform="translate(38,60)">
-          <circle cx="26" cy="26" r="26" fill="#F2C94C"/>
-          <text x="26" y="34" font-size="24" font-weight="800" text-anchor="middle" fill="#7A5A08" font-family="Arial, sans-serif">﷼</text>
+        <g transform="translate(80,70)" opacity="0.95">
+          <ellipse cx="0" cy="14" rx="24" ry="9" fill="#C99A2E"/>
+          <ellipse cx="0" cy="7" rx="24" ry="9" fill="#F2C94C"/>
+          <ellipse cx="0" cy="0" rx="24" ry="9" fill="#FCE18A"/>
         </g>
+
+        <circle cx="470" cy="330" r="5" fill="#8FE3D3" opacity="0.7"/>
+        <circle cx="500" cy="300" r="3.5" fill="#8FE3D3" opacity="0.5"/>
+        <circle cx="440" cy="360" r="3.5" fill="#8FE3D3" opacity="0.5"/>
       </svg>
-      <div class="hero-chip c1">
-        <svg viewBox="0 0 24 24" fill="none"><path d="M4 12L10 18L20 6" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        تنخواه همیشه شفاف
-      </div>
-      <div class="hero-chip c2">
-        <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/><path d="M12 7V12L15 14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-        دسترسی ۲۴/۷
-      </div>
     </div>
   </div>
 </section>
 
 <section class="services" id="services">
   <div class="wrap">
-    <div class="section-head">
+    <div class="section-head reveal">
       <div class="kicker">خدمات</div>
       <h2>سه ستون کاری ساحل</h2>
       <p>از ساخت نرم‌افزار اختصاصی تا مدیریت هوشمندانه حساب‌ها و آموزش تخصصی، همه‌چیز زیر یک سقف.</p>
     </div>
     <div class="cards">
-      <div class="card">
+      <div class="card reveal">
         <div class="card-icon">
           <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M8 4L2 12L8 20M16 4L22 12L16 20" stroke="#0B3D42" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </div>
         <h3>طراحی و برنامه‌نویسی</h3>
         <p>ساخت وب‌سایت‌ها و نرم‌افزارهای اختصاصی، از معماری اولیه تا استقرار، متناسب با فرآیندهای واقعی کسب‌وکار شما.</p>
       </div>
-      <div class="card">
+      <div class="card reveal">
         <div class="card-icon">
           <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M3 17L9 11L13 15L21 7M21 7H15M21 7V13" stroke="#0B3D42" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </div>
         <h3>حسابداری هوشمند</h3>
         <p>مدیریت اسناد مالی، تنخواه و گزارش‌های حسابداری با ابزارهایی که خطای انسانی را کم و سرعت تصمیم‌گیری را زیاد می‌کنند.</p>
       </div>
-      <div class="card">
+      <div class="card reveal">
         <div class="card-icon">
           <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M12 3L2 8L12 13L22 8L12 3Z" stroke="#0B3D42" stroke-width="2" stroke-linejoin="round"/><path d="M6 10V16C6 16 8 19 12 19C16 19 18 16 18 16V10" stroke="#0B3D42" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </div>
@@ -140,14 +136,14 @@
 
 <section class="showcase" id="showcase">
   <div class="wrap">
-    <div class="section-head">
+    <div class="section-head reveal">
       <div class="kicker">پیش‌نمایش</div>
       <h2>نمونه‌ای از سبک کاری ما</h2>
       <p>هر سه حوزه‌ی کاری ساحل، از طراحی رابط کاربری تا مدیریت اعداد و آموزش، با یک استاندارد بصری یکسان اجرا می‌شوند.</p>
     </div>
     <div class="showcase-grid">
 
-      <div class="mock-card">
+      <div class="mock-card reveal">
         <div class="mock-stage" style="background:linear-gradient(160deg,#0B3D42,#175E66);">
           <svg viewBox="0 0 400 220" preserveAspectRatio="xMidYMid slice">
             <rect x="30" y="26" width="340" height="168" rx="10" fill="#F6F7F3"/>
@@ -168,7 +164,7 @@
         </div>
       </div>
 
-      <div class="mock-card">
+      <div class="mock-card reveal">
         <div class="mock-stage" style="background:linear-gradient(160deg,#12464D,#2FB8A6);">
           <svg viewBox="0 0 400 220" preserveAspectRatio="xMidYMid slice">
             <rect x="34" y="30" width="332" height="160" rx="10" fill="#F6F7F3"/>
@@ -190,7 +186,7 @@
         </div>
       </div>
 
-      <div class="mock-card">
+      <div class="mock-card reveal">
         <div class="mock-stage" style="background:linear-gradient(160deg,#0E4A52,#8FE3D3);">
           <svg viewBox="0 0 400 220" preserveAspectRatio="xMidYMid slice">
             <rect x="120" y="34" width="160" height="110" rx="8" fill="#0B3D42"/>
@@ -220,30 +216,114 @@
   </div>
 </section>
 
-<section class="roadmap" id="roadmap">
+<section class="testimonials" id="testimonials">
   <div class="wrap">
-    <div class="section-head">
-      <div class="kicker">مسیر توسعه</div>
-      <h2>گام‌های بعدی این وب‌سایت</h2>
-      <p>ساحل مرحله‌به‌مرحله در حال گسترش است؛ زیرساخت فعلی برای رشد بعدی از پیش آماده شده.</p>
+    <div class="section-head reveal">
+      <div class="kicker">نظرات</div>
+      <h2>مشتریان درباره ساحل چه می‌گویند</h2>
+      <p>این بخش با نظرات واقعی مشتریان تکمیل می‌شود؛ فعلاً نمونه‌ی چیدمان را می‌بینید.</p>
+    </div>
+    <div class="testimonial-track">
+      <div class="testimonial-card reveal">
+        <div class="testimonial-stars">
+          <svg viewBox="0 0 20 20" fill="currentColor"><path d="M10 1L12.6 6.9L19 7.6L14.2 11.9L15.5 18.2L10 15L4.5 18.2L5.8 11.9L1 7.6L7.4 6.9L10 1Z"/></svg>
+          <svg viewBox="0 0 20 20" fill="currentColor"><path d="M10 1L12.6 6.9L19 7.6L14.2 11.9L15.5 18.2L10 15L4.5 18.2L5.8 11.9L1 7.6L7.4 6.9L10 1Z"/></svg>
+          <svg viewBox="0 0 20 20" fill="currentColor"><path d="M10 1L12.6 6.9L19 7.6L14.2 11.9L15.5 18.2L10 15L4.5 18.2L5.8 11.9L1 7.6L7.4 6.9L10 1Z"/></svg>
+          <svg viewBox="0 0 20 20" fill="currentColor"><path d="M10 1L12.6 6.9L19 7.6L14.2 11.9L15.5 18.2L10 15L4.5 18.2L5.8 11.9L1 7.6L7.4 6.9L10 1Z"/></svg>
+          <svg viewBox="0 0 20 20" fill="currentColor"><path d="M10 1L12.6 6.9L19 7.6L14.2 11.9L15.5 18.2L10 15L4.5 18.2L5.8 11.9L1 7.6L7.4 6.9L10 1Z"/></svg>
+        </div>
+        <p class="testimonial-quote">«نمونه نظر مشتری — این متن جای نظر واقعی مشتریان شماست که بعداً جایگزین می‌شود.»</p>
+        <div class="testimonial-who">
+          <div class="testimonial-avatar">؟</div>
+          <div><b>[نام مشتری]</b><span>[نام کسب‌وکار مشتری]</span></div>
+        </div>
+      </div>
+      <div class="testimonial-card reveal">
+        <div class="testimonial-stars">
+          <svg viewBox="0 0 20 20" fill="currentColor"><path d="M10 1L12.6 6.9L19 7.6L14.2 11.9L15.5 18.2L10 15L4.5 18.2L5.8 11.9L1 7.6L7.4 6.9L10 1Z"/></svg>
+          <svg viewBox="0 0 20 20" fill="currentColor"><path d="M10 1L12.6 6.9L19 7.6L14.2 11.9L15.5 18.2L10 15L4.5 18.2L5.8 11.9L1 7.6L7.4 6.9L10 1Z"/></svg>
+          <svg viewBox="0 0 20 20" fill="currentColor"><path d="M10 1L12.6 6.9L19 7.6L14.2 11.9L15.5 18.2L10 15L4.5 18.2L5.8 11.9L1 7.6L7.4 6.9L10 1Z"/></svg>
+          <svg viewBox="0 0 20 20" fill="currentColor"><path d="M10 1L12.6 6.9L19 7.6L14.2 11.9L15.5 18.2L10 15L4.5 18.2L5.8 11.9L1 7.6L7.4 6.9L10 1Z"/></svg>
+          <svg viewBox="0 0 20 20" fill="currentColor"><path d="M10 1L12.6 6.9L19 7.6L14.2 11.9L15.5 18.2L10 15L4.5 18.2L5.8 11.9L1 7.6L7.4 6.9L10 1Z"/></svg>
+        </div>
+        <p class="testimonial-quote">«نمونه نظر مشتری — این متن جای نظر واقعی مشتریان شماست که بعداً جایگزین می‌شود.»</p>
+        <div class="testimonial-who">
+          <div class="testimonial-avatar">؟</div>
+          <div><b>[نام مشتری]</b><span>[نام کسب‌وکار مشتری]</span></div>
+        </div>
+      </div>
+      <div class="testimonial-card reveal">
+        <div class="testimonial-stars">
+          <svg viewBox="0 0 20 20" fill="currentColor"><path d="M10 1L12.6 6.9L19 7.6L14.2 11.9L15.5 18.2L10 15L4.5 18.2L5.8 11.9L1 7.6L7.4 6.9L10 1Z"/></svg>
+          <svg viewBox="0 0 20 20" fill="currentColor"><path d="M10 1L12.6 6.9L19 7.6L14.2 11.9L15.5 18.2L10 15L4.5 18.2L5.8 11.9L1 7.6L7.4 6.9L10 1Z"/></svg>
+          <svg viewBox="0 0 20 20" fill="currentColor"><path d="M10 1L12.6 6.9L19 7.6L14.2 11.9L15.5 18.2L10 15L4.5 18.2L5.8 11.9L1 7.6L7.4 6.9L10 1Z"/></svg>
+          <svg viewBox="0 0 20 20" fill="currentColor"><path d="M10 1L12.6 6.9L19 7.6L14.2 11.9L15.5 18.2L10 15L4.5 18.2L5.8 11.9L1 7.6L7.4 6.9L10 1Z"/></svg>
+          <svg viewBox="0 0 20 20" fill="currentColor"><path d="M10 1L12.6 6.9L19 7.6L14.2 11.9L15.5 18.2L10 15L4.5 18.2L5.8 11.9L1 7.6L7.4 6.9L10 1Z"/></svg>
+        </div>
+        <p class="testimonial-quote">«نمونه نظر مشتری — این متن جای نظر واقعی مشتریان شماست که بعداً جایگزین می‌شود.»</p>
+        <div class="testimonial-who">
+          <div class="testimonial-avatar">؟</div>
+          <div><b>[نام مشتری]</b><span>[نام کسب‌وکار مشتری]</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="roadmap" id="features">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <div class="kicker">⚡ فناوری برای مدیریت بهتر</div>
+      <h2>حسابداری هوشمند</h2>
+      <p>اطلاعات مالی خود را ساده‌تر، سریع‌تر و دقیق‌تر مدیریت کنید.</p>
     </div>
     <div class="steps">
-      <div class="step">
-        <h3>وب‌سایت پایه</h3>
-        <p>انتشار روی گیت‌هاب با ساختاری قابل گسترش برای صفحات و بخش‌های آینده.</p>
+      <div class="step reveal">
+        <h3>اطلاعات یکپارچه</h3>
+        <p>داده‌های مالی و عملیاتی شما در یک ساختار منظم و قابل دسترس.</p>
       </div>
-      <div class="step">
-        <h3>اتصال به گوگل شیت</h3>
-        <p>ثبت و خواندن داده‌های مالی و تنخواه مستقیم از یک شیت مرکزی.</p>
+      <div class="step reveal">
+        <h3>تصمیم‌گیری سریع‌تر</h3>
+        <p>گزارش‌ها و داشبوردهای کاربردی برای دید بهتر نسبت به وضعیت کسب‌وکار.</p>
       </div>
-      <div class="step">
-        <h3>گوگل اپ اسکریپت</h3>
-        <p>افزودن پروژه‌ها و کاربران، و خودکارسازی فرآیندهای حسابداری.</p>
+      <div class="step reveal">
+        <h3>اتوماسیون هوشمند</h3>
+        <p>فرآیندهای تکراری را خودکار کنید و زمان بیشتری برای مدیریت داشته باشید.</p>
       </div>
-      <div class="step">
-        <h3>پنل مدیریت مالی</h3>
-        <p>داشبورد اختصاصی برای رصد لحظه‌ای وضعیت مالی و تنخواه.</p>
+      <div class="step reveal">
+        <h3>امنیت و پشتیبانی</h3>
+        <p>اطلاعات شما با زیرساخت امن گوگل محافظت می‌شود و همیشه پشتیبانی ساحل همراه شماست.</p>
       </div>
+    </div>
+  </div>
+</section>
+
+<section id="tips">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <div class="kicker">نکات کاربردی</div>
+      <h2>نکته‌های مفید و آموزش‌های کلیدی</h2>
+      <p>خلاصه‌ای از تجربه‌ی ساحل در حسابداری، تنخواه و مدیریت مالی کسب‌وکارهای کوچک.</p>
+    </div>
+    <div class="tips-grid">
+      <div class="tip-card reveal">
+        <span class="tip-tag">حسابداری</span>
+        <h3>چرا باید حساب شخصی و حساب کسب‌وکار را جدا نگه دارید؟</h3>
+        <p>مخلوط شدن هزینه‌های شخصی و کاری، بزرگ‌ترین دلیل گم‌شدن سود واقعی کسب‌وکارهای کوچک است.</p>
+      </div>
+      <div class="tip-card reveal">
+        <span class="tip-tag">تنخواه</span>
+        <h3>۳ اشتباه رایج در ثبت تنخواه که هزینه‌تان می‌شود</h3>
+        <p>از نداشتن رسید تا تأخیر در ثبت، این اشتباهات ساده گزارش مالی شما را غیرقابل‌اتکا می‌کنند.</p>
+      </div>
+      <div class="tip-card reveal">
+        <span class="tip-tag">مدیریت مالی</span>
+        <h3>چطور یک گزارش مالی ماهانه‌ی خوانا بسازیم؟</h3>
+        <p>یک گزارش خوب باید در ۵ دقیقه وضعیت کسب‌وکار را نشان دهد، نه در ۵۰ ردیف عدد پراکنده.</p>
+      </div>
+    </div>
+    <div class="section-cta">
+      <a href="articles.html" class="btn btn-ghost">مشاهده همه مقاله‌ها</a>
     </div>
   </div>
 </section>
@@ -255,6 +335,7 @@
       <h2>جایی که نظم مالی و فناوری به هم می‌رسند</h2>
       <p style="color:#4B6669; font-size:16px;">ساحل با تمرکز بر ترکیب دقیق حسابداری و فناوری اطلاعات فعالیت می‌کند؛ طراحی و برنامه‌نویسی سفارشی، حسابداری هوشمند، و آموزش کامپیوتر برای کسب‌وکارهایی که می‌خواهند داده‌های مالی‌شان قابل اتکا و قابل رشد باشد.</p>
       <div class="stat-row">
+        <div class="stat"><b id="statYears">+۱۰</b><span>سال تجربه</span></div>
         <div class="stat"><b>۳</b><span>حوزه اصلی خدمات</span></div>
         <div class="stat"><b>۱۰۰٪</b><span>ساختار قابل گسترش</span></div>
         <div class="stat"><b>۲۴/۷</b><span>دسترسی به داده مالی</span></div>
