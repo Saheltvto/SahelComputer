@@ -48,6 +48,7 @@
     </div>
 
     <div class="page">
+      <div id="dashboardView">
       <div class="page-head">
         <div>
           <h1>داشبورد</h1>
@@ -96,6 +97,21 @@
           <p style="color:#7F9A9C; font-size:13.5px; text-align:center; padding:10px 0;">در حال بارگذاری...</p>
         </div>
       </div>
+      </div>
+
+      <div id="workspaceView" style="display:none;">
+        <div class="page-head">
+          <div>
+            <h1 id="workspaceTitle">کارتابل من</h1>
+            <p id="workspaceSub">دسترسی مستقیم به فایل کاری شما</p>
+          </div>
+        </div>
+        <div id="workspaceTabs" style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px;"></div>
+        <div id="workspaceEmpty" style="display:none; background:#fff; border:1px solid var(--line); border-radius:16px; padding:40px; text-align:center; color:#7F9A9C;">
+          لینک کارتابل برای این کاربر تنظیم نشده — با مدیر سیستم تماس بگیرید.
+        </div>
+        <iframe id="workspaceFrame" style="display:none; width:100%; height:78vh; border:none; border-radius:16px; background:#fff; box-shadow:var(--shadow);"></iframe>
+      </div>
     </div>
 
     <footer style="padding:20px 26px 40px;">© ۱۴۰۴ ساحل — تمامی حقوق محفوظ است. <span style="float:left;">نسخه ۱.۰.۰</span></footer>
@@ -108,8 +124,8 @@
       <span>ساحل</span>
     </div>
     <nav class="sidebar-nav">
-      <a href="#" class="active">داشبورد <svg viewBox="0 0 24 24" fill="none"><path d="M4 12L12 4L20 12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M6 10V20H18V10" stroke="currentColor" stroke-width="1.8"/></svg></a>
-      <a href="#">پروژه‌ها <svg viewBox="0 0 24 24" fill="none"><rect x="3" y="7" width="18" height="13" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M8 7V5C8 4 8.8 3 10 3H14C15.2 3 16 4 16 5V7" stroke="currentColor" stroke-width="1.8"/></svg></a>
+      <a href="#" class="active" id="navDashboard" data-view="dashboard">داشبورد <svg viewBox="0 0 24 24" fill="none"><path d="M4 12L12 4L20 12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M6 10V20H18V10" stroke="currentColor" stroke-width="1.8"/></svg></a>
+      <a href="#" id="navWorkspace" data-view="workspace">کارتابل من <svg viewBox="0 0 24 24" fill="none"><rect x="3" y="7" width="18" height="13" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M8 7V5C8 4 8.8 3 10 3H14C15.2 3 16 4 16 5V7" stroke="currentColor" stroke-width="1.8"/></svg></a>
       <a href="#">شیت‌ها <svg viewBox="0 0 24 24" fill="none"><rect x="4" y="3" width="16" height="18" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M8 8H16M8 12H16M8 16H12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></a>
       <a href="#">گزارش‌ها <svg viewBox="0 0 24 24" fill="none"><path d="M4 19V5H20V19H4Z" stroke="currentColor" stroke-width="1.8"/><path d="M8 15L11 11L14 13L17 8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
       <a href="#">کاربران <svg viewBox="0 0 24 24" fill="none"><circle cx="9" cy="8" r="3" stroke="currentColor" stroke-width="1.8"/><path d="M3 20C3 16.5 5.5 15 9 15C12.5 15 15 16.5 15 20" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="17" cy="9" r="2.4" stroke="currentColor" stroke-width="1.8"/></svg></a>
