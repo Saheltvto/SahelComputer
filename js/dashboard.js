@@ -86,6 +86,24 @@ function renderActivity(activity) {
     </div>`).join('');
 }
 
+function renderSheets(links) {
+  const el = document.getElementById('sheetsList');
+  if (!links.length) {
+    el.innerHTML = '<p style="color:#7F9A9C; font-size:13.5px; text-align:center; padding:10px 0;">هنوز شیتی ثبت نشده است.</p>';
+    return;
+  }
+  el.innerHTML = links.map(l => {
+    const icon = PROJECT_ICONS[l.icon] || PROJECT_ICONS.chart;
+    const url = l.url || '#';
+    return `
+      <a class="sheet-card" href="${url}" target="_blank" rel="noopener" style="display:block; text-decoration:none; color:inherit;">
+        <div class="stat-ic ${icon.cls}"><svg viewBox="0 0 24 24" fill="none">${icon.path}</svg></div>
+        <b>${l.title}</b>
+        <span>آخرین بازدید: ${l.lastVisited || '—'}</span>
+      </a>`;
+  }).join('');
+}
+
 async function loadDashboard() {
   document.getElementById('topbarName').textContent = sahelUser.name;
   document.getElementById('topbarRole').textContent = sahelUser.role === 'admin' ? 'مدیر سیستم' : 'کاربر';
@@ -105,6 +123,7 @@ async function loadDashboard() {
 
     renderProjects(data.projects);
     renderActivity(data.activity);
+    renderSheets(data.quickLinks || []);
   } catch (err) {
     document.getElementById('projectsList').innerHTML =
       '<p style="color:#C0472B; font-size:13.5px; text-align:center; padding:10px 0;">خطا در برقراری ارتباط با سرور. آدرس API را در js/config.js بررسی کنید.</p>';
