@@ -20,10 +20,10 @@
       </button>
 
       <div class="topbar-user">
-        <div class="avatar">ع.ا</div>
+        <div class="avatar" id="topbarAvatar">–</div>
         <div class="who">
-          <b>علی احمدی</b>
-          <span>مدیر سیستم</span>
+          <b id="topbarName">در حال بارگذاری...</b>
+          <span id="topbarRole">—</span>
         </div>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M6 9L12 15L18 9" stroke="#7F9A9C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </div>
@@ -57,100 +57,41 @@
 
       <div class="stat-grid">
         <div class="stat-card">
-          <div><div class="num">۱۲</div><div class="lbl">پروژه‌های فعال</div><div class="delta">+۲ نسبت به ماه قبل</div></div>
+          <div><div class="num" id="statActive">–</div><div class="lbl">پروژه‌های فعال</div></div>
           <div class="stat-ic ic-teal"><svg viewBox="0 0 24 24" fill="none"><rect x="3" y="7" width="18" height="13" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M8 7V5C8 4 8.8 3 10 3H14C15.2 3 16 4 16 5V7" stroke="currentColor" stroke-width="1.8"/></svg></div>
         </div>
         <div class="stat-card">
-          <div><div class="num">۴۵</div><div class="lbl">شیت‌های در دسترس</div><div class="delta">+۵ نسبت به ماه قبل</div></div>
-          <div class="stat-ic ic-blue"><svg viewBox="0 0 24 24" fill="none"><rect x="4" y="3" width="16" height="18" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M8 8H16M8 12H16M8 16H12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></div>
+          <div><div class="num" id="statCompleted">–</div><div class="lbl">پروژه‌های تکمیل‌شده</div></div>
+          <div class="stat-ic ic-blue"><svg viewBox="0 0 24 24" fill="none"><path d="M4 12L10 18L20 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
         </div>
         <div class="stat-card">
-          <div><div class="num">۲۸</div><div class="lbl">کاربران فعال</div><div class="delta">+۸ نسبت به ماه قبل</div></div>
-          <div class="stat-ic ic-purple"><svg viewBox="0 0 24 24" fill="none"><circle cx="9" cy="8" r="3" stroke="currentColor" stroke-width="1.8"/><path d="M3 20C3 16.5 5.5 15 9 15C12.5 15 15 16.5 15 20" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M15 8.5C16.1 8.5 17 7.6 17 6.5C17 5.4 16.1 4.5 15 4.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M17 15C19.2 15.3 21 16.7 21 20" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></div>
+          <div><div class="num" id="statTotal">–</div><div class="lbl">کل پروژه‌ها</div></div>
+          <div class="stat-ic ic-purple"><svg viewBox="0 0 24 24" fill="none"><rect x="4" y="3" width="16" height="18" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M8 8H16M8 12H16M8 16H12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></div>
         </div>
         <div class="stat-card">
-          <div><div class="num">۷</div><div class="lbl">اطلاعیه‌ها</div><div class="delta" style="color:#C56A1E;">نیاز به بررسی</div></div>
-          <div class="stat-ic ic-amber"><svg viewBox="0 0 24 24" fill="none"><path d="M6 9C6 5.7 8.7 3 12 3C15.3 3 18 5.7 18 9C18 14 20 15 20 16H4C4 15 6 14 6 9Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M10 19C10 20.1 10.9 21 12 21C13.1 21 14 20.1 14 19" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></div>
+          <div><div class="num" id="statUsers">–</div><div class="lbl">کاربران سیستم</div></div>
+          <div class="stat-ic ic-amber"><svg viewBox="0 0 24 24" fill="none"><circle cx="9" cy="8" r="3" stroke="currentColor" stroke-width="1.8"/><path d="M3 20C3 16.5 5.5 15 9 15C12.5 15 15 16.5 15 20" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></div>
         </div>
       </div>
 
       <div class="split-2">
         <div class="panel">
           <div class="panel-head"><h2>فعالیت‌های اخیر</h2></div>
-          <div class="activity-item">
-            <div class="activity-ic ic-blue"><svg viewBox="0 0 24 24" fill="none"><rect x="4" y="3" width="16" height="18" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M8 8H16M8 12H16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></div>
-            <div><b>گزارش ماهانه پروژه تجاری</b><span>۲ ساعت پیش</span></div>
+          <div id="activityList">
+            <p style="color:#7F9A9C; font-size:13.5px; text-align:center; padding:10px 0;">در حال بارگذاری...</p>
           </div>
-          <div class="activity-item">
-            <div class="activity-ic ic-teal"><svg viewBox="0 0 24 24" fill="none"><path d="M4 12L10 18L20 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-            <div><b>به‌روزرسانی شیت مالی</b><span>۵ ساعت پیش</span></div>
-          </div>
-          <div class="activity-item">
-            <div class="activity-ic ic-purple"><svg viewBox="0 0 24 24" fill="none"><circle cx="9" cy="8" r="3" stroke="currentColor" stroke-width="1.8"/><path d="M3 19C3 15.7 5.5 14 9 14C12.5 14 15 15.7 15 19" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></div>
-            <div><b>افزودن کاربر جدید</b><span>۱ روز پیش</span></div>
-          </div>
-          <div class="activity-item">
-            <div class="activity-ic ic-amber"><svg viewBox="0 0 24 24" fill="none"><rect x="4" y="3" width="16" height="18" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M9 12L11 14L15 9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-            <div><b>تایید گزارش فصلی</b><span>۲ روز پیش</span></div>
-          </div>
-          <a href="#" style="display:block; text-align:center; margin-top:14px; font-size:13px; font-weight:700; color:var(--turquoise);">مشاهده همه</a>
         </div>
 
         <div class="panel">
-          <div class="panel-head"><h2>پروژه‌های من</h2><a href="#">مشاهده همه</a></div>
-
-          <div class="proj-row">
-            <div class="proj-ic ic-teal"><svg viewBox="0 0 24 24" fill="none"><path d="M4 21V9L12 4L20 9V21" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M9 21V14H15V21" stroke="currentColor" stroke-width="1.8"/></svg></div>
-            <div class="proj-info">
-              <div class="proj-top"><b>پروژه ساخت مجتمع تجاری</b><span class="proj-tag tag-progress">در حال انجام</span></div>
-              <div class="proj-row-inner">
-                <div class="bar" style="flex:1;"><i style="width:65%;"></i></div>
-                <span class="pct">۶۵٪</span>
-              </div>
-              <div class="proj-owner"><span class="mini-avatar">ع.ا</span> علی احمدی · ۱۴۰۳/۰۲/۱۵</div>
-            </div>
-          </div>
-
-          <div class="proj-row">
-            <div class="proj-ic ic-blue"><svg viewBox="0 0 24 24" fill="none"><path d="M4 19L9 12L13 15L20 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-            <div class="proj-info">
-              <div class="proj-top"><b>بررسی مالی شرکت آریا</b><span class="proj-tag tag-progress">در حال انجام</span></div>
-              <div class="proj-row-inner">
-                <div class="bar" style="flex:1;"><i style="width:30%; background:#3178C6;"></i></div>
-                <span class="pct">۳۰٪</span>
-              </div>
-              <div class="proj-owner"><span class="mini-avatar">م.ر</span> مریم رضایی · ۱۴۰۳/۰۱/۲۰</div>
-            </div>
-          </div>
-
-          <div class="proj-row">
-            <div class="proj-ic ic-purple"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="3.5" stroke="currentColor" stroke-width="1.8"/><path d="M5 20C5 16.5 8 14.5 12 14.5C16 14.5 19 16.5 19 20" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></div>
-            <div class="proj-info">
-              <div class="proj-top"><b>سیستم حقوق و دستمزد</b><span class="proj-tag tag-done">تکمیل‌شده</span></div>
-              <div class="proj-row-inner">
-                <div class="bar" style="flex:1;"><i style="width:100%;"></i></div>
-                <span class="pct">۱۰۰٪</span>
-              </div>
-              <div class="proj-owner"><span class="mini-avatar">س.ک</span> سارا کریمی · ۱۴۰۲/۱۲/۱۰</div>
-            </div>
-          </div>
-
-          <div class="proj-row">
-            <div class="proj-ic ic-amber"><svg viewBox="0 0 24 24" fill="none"><path d="M4 19V5H20V19H4Z" stroke="currentColor" stroke-width="1.8"/><path d="M8 15L11 11L14 13L17 8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-            <div class="proj-info">
-              <div class="proj-top"><b>تحلیل و گزارش فروش</b><span class="proj-tag tag-wait">در انتظار</span></div>
-              <div class="proj-row-inner">
-                <div class="bar" style="flex:1;"><i style="width:15%; background:#C56A1E;"></i></div>
-                <span class="pct">۱۵٪</span>
-              </div>
-              <div class="proj-owner"><span class="mini-avatar">ع.ا</span> علی احمدی · ۱۴۰۲/۱۱/۲۵</div>
-            </div>
+          <div class="panel-head"><h2 id="projectsTitle">پروژه‌های من</h2></div>
+          <div id="projectsList">
+            <p style="color:#7F9A9C; font-size:13.5px; text-align:center; padding:10px 0;">در حال بارگذاری...</p>
           </div>
         </div>
       </div>
 
       <div class="panel">
-        <div class="panel-head"><h2>شیت‌های پرکاربرد</h2><a href="#">مشاهده همه</a></div>
+        <div class="panel-head"><h2>شیت‌های پرکاربرد <span style="font-size:11.5px; font-weight:600; color:#7F9A9C;">(نمونه — به‌زودی متصل می‌شود)</span></h2></div>
         <div class="sheet-grid">
           <div class="sheet-card">
             <div class="stat-ic ic-teal"><svg viewBox="0 0 24 24" fill="none"><rect x="4" y="3" width="16" height="18" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M8 8H16M8 12H16M8 16H12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></div>
@@ -195,10 +136,11 @@
       <a href="#">تنظیمات <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8"/><path d="M19 12C19 12.4 19 12.7 18.9 13.1L21 14.6L19.5 17.3L17.1 16.4C16.6 16.8 16 17.1 15.4 17.4L15 20H12L11.6 17.4C11 17.1 10.4 16.8 9.9 16.4L7.5 17.3L6 14.6L8.1 13.1C8 12.7 8 12.4 8 12C8 11.6 8 11.3 8.1 10.9L6 9.4L7.5 6.7L9.9 7.6C10.4 7.2 11 6.9 11.6 6.6L12 4H15L15.4 6.6C16 6.9 16.6 7.2 17.1 7.6L19.5 6.7L21 9.4L18.9 10.9C19 11.3 19 11.6 19 12Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg></a>
       <a href="#">پشتیبانی <svg viewBox="0 0 24 24" fill="none"><path d="M4 13C4 8 7.5 4 12 4C16.5 4 20 8 20 13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><rect x="3" y="13" width="5" height="6" rx="1.5" stroke="currentColor" stroke-width="1.8"/><rect x="16" y="13" width="5" height="6" rx="1.5" stroke="currentColor" stroke-width="1.8"/></svg></a>
     </nav>
-    <a href="login.html" class="sidebar-logout">خروج <svg viewBox="0 0 24 24" fill="none" width="18" height="18"><path d="M16 17L21 12L16 7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 12H9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M9 21H5C3.9 21 3 20.1 3 19V5C3 3.9 3.9 3 5 3H9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></a>
+    <a href="login.html" class="sidebar-logout" onclick="sessionStorage.removeItem('sahel_user')">خروج <svg viewBox="0 0 24 24" fill="none" width="18" height="18"><path d="M16 17L21 12L16 7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 12H9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M9 21H5C3.9 21 3 20.1 3 19V5C3 3.9 3.9 3 5 3H9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></a>
   </aside>
 </div>
 
+<script src="js/config.js"></script>
 <script src="js/dashboard.js" defer></script>
 </body>
 </html>
