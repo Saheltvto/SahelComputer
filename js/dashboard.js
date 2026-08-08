@@ -24,6 +24,58 @@ if (scrim) {
   scrim.addEventListener('click', closeSidebar);
 }
 
+/* ===== سوییچ بین «داشبورد» و «کارتابل من» ===== */
+const navDashboard = document.getElementById('navDashboard');
+const navWorkspace = document.getElementById('navWorkspace');
+const dashboardView = document.getElementById('dashboardView');
+const workspaceView = document.getElementById('workspaceView');
+const workspaceFrame = document.getElementById('workspaceFrame');
+const workspaceEmpty = document.getElementById('workspaceEmpty');
+const workspaceTabs = document.getElementById('workspaceTabs');
+const workspaceTitle = document.getElementById('workspaceTitle');
+const workspaceSub = document.getElementById('workspaceSub');
+
+function showView(view) {
+  navDashboard.classList.toggle('active', view === 'dashboard');
+  navWorkspace.classList.toggle('active', view === 'workspace');
+  dashboardView.style.display = view === 'dashboard' ? '' : 'none';
+  workspaceView.style.display = view === 'workspace' ? '' : 'none';
+  if (sidebar.classList.contains('open')) closeSidebar();
+}
+
+function openWorkspace(url) {
+  if (!url) {
+    workspaceFrame.style.display = 'none';
+    workspaceEmpty.style.display = 'block';
+    return;
+  }
+  workspaceEmpty.style.display = 'none';
+  workspaceFrame.style.display = 'block';
+  if (workspaceFrame.src !== url) workspaceFrame.src = url;
+}
+
+function renderWorkspaceTabs(workspaces) {
+  if (!workspaces.length) {
+    workspaceTabs.innerHTML = '';
+    openWorkspace('');
+    return;
+  }
+  workspaceTabs.innerHTML = workspaces.map((w, i) =>
+    `<button class="btn ${i === 0 ? 'btn-primary' : 'btn-ghost'}" data-url="${w.appUrl}" data-i="${i}" style="padding:9px 18px; font-size:13.5px;">${w.name}</button>`
+  ).join('');
+  workspaceTabs.querySelectorAll('button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      workspaceTabs.querySelectorAll('button').forEach(b => { b.classList.remove('btn-primary'); b.classList.add('btn-ghost'); });
+      btn.classList.remove('btn-ghost'); btn.classList.add('btn-primary');
+      openWorkspace(btn.dataset.url);
+    });
+  });
+  openWorkspace(workspaces[0].appUrl);
+}
+
+navDashboard.addEventListener('click', e => { e.preventDefault(); showView('dashboard'); });
+navWorkspace.addEventListener('click', e => { e.preventDefault(); showView('workspace'); });
+
 /* ===== نگاشت آیکون و رنگ برای هر نوع پروژه ===== */
 const PROJECT_ICONS = {
   building: { cls: 'ic-teal', path: '<path d="M4 21V9L12 4L20 9V21" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M9 21V14H15V21" stroke="currentColor" stroke-width="1.8"/>' },
@@ -110,6 +162,16 @@ async function loadDashboard() {
   document.getElementById('topbarAvatar').textContent = sahelUser.initials || initials(sahelUser.name);
   document.getElementById('projectsTitle').textContent = sahelUser.role === 'admin' ? 'همه پروژه‌ها' : 'پروژه‌های من';
 
+  if (sahelUser.role === 'admin') {
+    workspaceTitle.textContent = 'کارتابل اعضا';
+    workspaceSub.textContent = 'کارتابل هر عضو تیم را انتخاب و مشاهده کنید';
+  } else {
+    workspaceTitle.textContent = 'کارتابل من';
+    workspaceSub.textContent = 'فایل کاری اختصاصی شما';
+    workspaceTabs.style.display = 'none';
+    openWorkspace(sahelUser.appUrl);
+  }
+
   try {
     const data = await sahelApiCall({ action: 'dashboard', userId: sahelUser.id });
     if (!data.success) {
@@ -124,6 +186,9 @@ async function loadDashboard() {
     renderProjects(data.projects);
     renderActivity(data.activity);
     renderSheets(data.quickLinks || []);
+    if (sahelUser.role === 'admin') {
+      renderWorkspaceTabs(data.workspaces || []);
+    }
   } catch (err) {
     document.getElementById('projectsList').innerHTML =
       '<p style="color:#C0472B; font-size:13.5px; text-align:center; padding:10px 0;">خطا در برقراری ارتباط با سرور. آدرس API را در js/config.js بررسی کنید.</p>';
