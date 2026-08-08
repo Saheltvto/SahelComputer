@@ -29,24 +29,26 @@
 
       <form id="loginForm">
         <div class="field">
-          <input type="email" placeholder="ایمیل خود را وارد کنید" required>
+          <input type="email" id="loginEmail" placeholder="ایمیل خود را وارد کنید" required>
           <span class="field-icon">
             <svg viewBox="0 0 24 24" fill="none"><path d="M3 6.5L12 13L21 6.5M4 5H20C20.5523 5 21 5.44772 21 6V18C21 18.5523 20.5523 19 20 19H4C3.44772 19 3 18.5523 3 18V6C3 5.44772 3.44772 5 4 5Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
           </span>
         </div>
         <div class="field">
-          <input type="password" placeholder="رمز عبور خود را وارد کنید" required>
+          <input type="password" id="loginPassword" placeholder="رمز عبور خود را وارد کنید" required>
           <span class="field-icon">
             <svg viewBox="0 0 24 24" fill="none"><rect x="5" y="10" width="14" height="10" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M8 10V7C8 4.79086 9.79086 3 12 3C14.2091 3 16 4.79086 16 7V10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
           </span>
         </div>
+
+        <div id="loginError" style="display:none; background:rgba(228,120,91,0.12); color:#C0472B; border-radius:10px; padding:11px 14px; font-size:13.5px; margin-bottom:16px;"></div>
 
         <div class="auth-row">
           <label class="auth-check"><input type="checkbox"> مرا به‌خاطر بسپار</label>
           <a href="#">رمز عبور را فراموش کرده‌اید؟</a>
         </div>
 
-        <button type="submit" class="btn btn-primary btn-block">ورود</button>
+        <button type="submit" id="loginBtn" class="btn btn-primary btn-block">ورود</button>
       </form>
 
       <p class="auth-foot">حساب کاربری ندارید؟ <a href="#">ثبت‌نام کنید</a></p>
@@ -81,6 +83,8 @@
 
 </div>
 
+<script src="js/config.js"></script>
 <script src="js/main.js" defer></script>
+<script src="js/auth.js" defer></script>
 </body>
 </html>
