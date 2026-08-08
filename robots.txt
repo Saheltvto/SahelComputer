@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://saheltvto.github.io/SahelComputer/sitemap.xml
