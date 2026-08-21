@@ -24,28 +24,34 @@
   .user-dropdown, .file-panel {
     position: fixed;
     background: #fff;
-    border: 1px solid var(--line, #E4ECEC);
-    border-radius: 12px;
-    box-shadow: var(--shadow, 0 10px 28px rgba(0,0,0,0.12));
+    border: 1px solid #E9F1F1;
+    border-radius: 16px;
+    box-shadow: 0 16px 40px rgba(11,61,66,0.14), 0 2px 8px rgba(11,61,66,0.06);
     z-index: 500;
     display: none;
+    animation: panelPop .16s ease;
+  }
+  @keyframes panelPop {
+    from { opacity: 0; transform: translateY(-6px); }
+    to   { opacity: 1; transform: translateY(0); }
   }
   .user-dropdown {
-    min-width: 150px;
-    padding: 6px;
+    min-width: 160px;
+    padding: 8px;
   }
   .user-dropdown-logout {
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 10px 12px;
-    border-radius: 8px;
+    padding: 11px 13px;
+    border-radius: 10px;
     color: #C0472B;
     text-decoration: none;
     font-weight: 600;
     font-size: 13.5px;
+    transition: background .15s ease;
   }
-  .user-dropdown-logout:hover { background: rgba(192,71,43,0.08); }
+  .user-dropdown-logout:hover { background: rgba(192,71,43,0.09); }
 
   #workspaceTabs {
     display: none;
@@ -70,8 +76,8 @@
   /* --- صندوق ارسال/دریافت فایل --- */
   .topbar-icon { position: relative; cursor: pointer; }
   .file-panel {
-    width: 320px;
-    max-height: 420px;
+    width: 336px;
+    max-height: 460px;
     flex-direction: column;
     text-align: right;
     cursor: default;
@@ -81,45 +87,136 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 12px 14px;
-    border-bottom: 1px solid var(--line, #E4ECEC);
-    font-size: 13.5px;
+    padding: 14px 16px;
+    background: linear-gradient(135deg, #0B3D42, #14555C);
   }
-  .file-panel-head b { font-weight: 700; color: var(--deep, #0B3D42); }
+  .file-panel-head b { font-weight: 700; color: #fff; font-size: 14px; }
+  .file-panel-head .btn-add {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 13px;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #0B3D42;
+    background: #8FE3D3;
+    border: none;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: filter .15s ease, transform .15s ease;
+  }
+  .file-panel-head .btn-add:hover { filter: brightness(1.06); transform: translateY(-1px); }
+  .file-panel-head .btn-add.is-open { background: rgba(255,255,255,0.18); color: #fff; }
+
   #fileSendForm {
     display: none;
     flex-direction: column;
-    gap: 8px;
-    padding: 12px 14px;
-    border-bottom: 1px solid var(--line, #E4ECEC);
-    background: #FAFCFC;
+    gap: 10px;
+    padding: 14px 16px;
+    border-bottom: 1px solid #EDF3F3;
+    background: #F6FAFA;
   }
-  #fileSendForm select, #fileSendForm input[type="file"] {
+  .field-label { font-size: 11.5px; color: #7F9A9C; font-weight: 600; margin-bottom: 2px; }
+  #fileSendForm select {
     width: 100%;
-    padding: 7px 9px;
-    border: 1px solid var(--line, #E4ECEC);
-    border-radius: 8px;
+    padding: 9px 34px 9px 12px;
+    border: 1.5px solid #E0EAEA;
+    border-radius: 10px;
     font-family: inherit;
-    font-size: 12.8px;
-    background: #fff;
+    font-size: 13px;
+    background: #fff url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"><path d="M6 9L12 15L18 9" stroke="%237F9A9C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>') no-repeat left 10px center;
+    background-size: 16px;
     color: #0B3D42;
+    appearance: none;
+    -webkit-appearance: none;
+    cursor: pointer;
+    transition: border-color .15s ease;
   }
-  #fileSendStatus { font-size: 12px; min-height: 16px; }
-  #fileList { overflow-y: auto; flex: 1; max-height: 280px; }
+  #fileSendForm select:focus { outline: none; border-color: #2FB8A6; }
+
+  .file-upload {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 10px 12px;
+    border: 1.5px dashed #C9DEDE;
+    border-radius: 10px;
+    background: #fff;
+    color: #7F9A9C;
+    font-size: 12.5px;
+    cursor: pointer;
+    transition: border-color .15s ease, color .15s ease, background .15s ease;
+  }
+  .file-upload:hover { border-color: #2FB8A6; color: #2FB8A6; background: rgba(47,184,166,0.04); }
+  .file-upload svg { flex-shrink: 0; }
+  .file-upload.has-file { border-style: solid; border-color: #2FB8A6; color: #0B3D42; background: rgba(47,184,166,0.06); }
+  #fileInputLabel { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  #fileSendBtn {
+    width: 100%;
+    padding: 10px;
+    font-size: 13.5px;
+    font-weight: 700;
+    color: #fff;
+    background: linear-gradient(135deg, #2FB8A6, #1B6B76);
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: filter .15s ease, transform .15s ease, opacity .15s ease;
+  }
+  #fileSendBtn:hover:not(:disabled) { filter: brightness(1.05); transform: translateY(-1px); }
+  #fileSendBtn:disabled { opacity: 0.6; cursor: not-allowed; }
+  #fileSendStatus { font-size: 12px; min-height: 16px; text-align: center; font-weight: 600; }
+
+  #fileList { overflow-y: auto; flex: 1; max-height: 300px; }
+  #fileList::-webkit-scrollbar { width: 6px; }
+  #fileList::-webkit-scrollbar-thumb { background: #DCE9E9; border-radius: 6px; }
+
   .file-item {
     display: flex;
-    flex-direction: column;
-    gap: 3px;
-    padding: 10px 14px;
-    border-bottom: 1px solid var(--line, #F1F5F5);
+    align-items: center;
+    gap: 11px;
+    padding: 11px 16px;
+    border-bottom: 1px solid #F1F5F5;
     text-decoration: none;
     color: inherit;
+    position: relative;
+    transition: background .15s ease;
   }
-  .file-item:hover { background: #FAFCFC; }
-  .file-item.unread { background: rgba(47,184,166,0.06); }
-  .file-item b { font-size: 13px; }
-  .file-item span { font-size: 11.5px; color: #7F9A9C; }
-  .file-empty { padding: 24px 14px; text-align: center; color: #7F9A9C; font-size: 13px; }
+  .file-item:hover { background: #F6FAFA; }
+  .file-icon {
+    flex-shrink: 0;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #EAF6F4;
+    color: #2FB8A6;
+  }
+  .file-item-body { flex: 1; min-width: 0; }
+  .file-item-body b {
+    display: block;
+    font-size: 13px;
+    color: #0B3D42;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .file-item-body span { font-size: 11.5px; color: #7F9A9C; }
+  .file-item.unread .file-item-body b { font-weight: 800; }
+  .unread-dot {
+    position: absolute;
+    inset-inline-start: 14px;
+    top: 14px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #2FB8A6;
+  }
+  .file-empty { padding: 30px 16px; text-align: center; color: #7F9A9C; font-size: 13px; }
 </style>
 </head>
 <body>
@@ -171,15 +268,28 @@
   <div class="file-panel" id="filePanel">
     <div class="file-panel-head">
       <b>ارسال و دریافت فایل</b>
-      <button type="button" id="newFileBtn" class="btn btn-ghost" style="padding:5px 12px; font-size:12.5px;">+ ارسال فایل</button>
+      <button type="button" id="newFileBtn" class="btn-add">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 5V19M5 12H19" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+        ارسال فایل
+      </button>
     </div>
 
     <div id="fileSendForm">
-      <select id="fileRecipient">
-        <option value="">در حال بارگذاری کاربران...</option>
-      </select>
-      <input type="file" id="fileInput" accept=".pdf,.xlsx,.xls,.png,.jpg,.jpeg">
-      <button type="button" id="fileSendBtn" class="btn btn-primary" style="padding:7px; font-size:12.8px;">ارسال</button>
+      <div>
+        <div class="field-label">گیرنده</div>
+        <select id="fileRecipient">
+          <option value="">در حال بارگذاری کاربران...</option>
+        </select>
+      </div>
+      <div>
+        <div class="field-label">فایل</div>
+        <label class="file-upload" for="fileInput" id="fileUploadLabel">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 16V4M12 4L7 9M12 4L17 9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 16V18C4 19.1 4.9 20 6 20H18C19.1 20 20 19.1 20 18V16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          <span id="fileInputLabel">انتخاب فایل (PDF، اکسل یا عکس)</span>
+        </label>
+        <input type="file" id="fileInput" accept=".pdf,.xlsx,.xls,.png,.jpg,.jpeg" style="display:none;">
+      </div>
+      <button type="button" id="fileSendBtn">ارسال فایل</button>
       <span id="fileSendStatus"></span>
     </div>
 
