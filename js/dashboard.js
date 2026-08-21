@@ -249,49 +249,97 @@ if (newFileBtn) {
 
 const fileUploadLabel = document.getElementById('fileUploadLabel');
 const fileInputLabel = document.getElementById('fileInputLabel');
+const fileChipsList = document.getElementById('fileChipsList');
+
+let selectedFiles = []; // آرایه‌ی خودمان از فایل‌های انتخاب‌شده (چون FileList غیرقابل‌ویرایش است)
+
+function formatFileSize(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024 * 1024) return Math.round(bytes / 1024) + ' KB';
+  return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+}
+
+function renderFileChips() {
+  if (!selectedFiles.length) {
+    fileChipsList.innerHTML = '';
+    fileInputLabel.textContent = 'انتخاب فایل (چند فایل هم‌زمان ممکن است)';
+    fileUploadLabel.classList.remove('has-file');
+    return;
+  }
+  fileUploadLabel.classList.add('has-file');
+  fileInputLabel.textContent = selectedFiles.length === 1
+    ? selectedFiles[0].name
+    : `${selectedFiles.length} فایل انتخاب شد`;
+
+  fileChipsList.innerHTML = selectedFiles.map((f, i) => `
+    <div class="file-chip">
+      <span class="file-chip-name">${f.name}</span>
+      <span class="file-chip-size">${formatFileSize(f.size)}</span>
+      <button type="button" class="file-chip-remove" data-i="${i}" title="انصراف از ارسال این فایل">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+  `).join('');
+
+  fileChipsList.querySelectorAll('.file-chip-remove').forEach(btn => {
+    btn.addEventListener('click', () => {
+      selectedFiles.splice(Number(btn.dataset.i), 1);
+      renderFileChips();
+    });
+  });
+}
+
 if (fileInput) {
   fileInput.addEventListener('change', () => {
-    const file = fileInput.files[0];
-    if (file) {
-      fileInputLabel.textContent = file.name;
-      fileUploadLabel.classList.add('has-file');
-    } else {
-      fileInputLabel.textContent = 'انتخاب فایل (PDF، اکسل یا عکس)';
-      fileUploadLabel.classList.remove('has-file');
-    }
+    const newFiles = Array.from(fileInput.files);
+    // جلوگیری از افزودن فایل تکراری (بر اساس نام و حجم)
+    newFiles.forEach(nf => {
+      const exists = selectedFiles.some(f => f.name === nf.name && f.size === nf.size);
+      if (!exists) selectedFiles.push(nf);
+    });
+    fileInput.value = ''; // امکان انتخاب دوباره‌ی همون فایل در آینده
+    renderFileChips();
   });
 }
 
 if (fileSendBtn) {
-  fileSendBtn.addEventListener('click', () => {
+  fileSendBtn.addEventListener('click', async () => {
     const receiverId = fileRecipient.value;
-    const file = fileInput.files[0];
 
     if (!receiverId) {
       fileSendStatus.style.color = '#C0472B';
       fileSendStatus.textContent = 'گیرنده را انتخاب کنید.';
       return;
     }
-    if (!file) {
+    if (!selectedFiles.length) {
       fileSendStatus.style.color = '#C0472B';
-      fileSendStatus.textContent = 'یک فایل انتخاب کنید.';
+      fileSendStatus.textContent = 'حداقل یک فایل انتخاب کنید.';
       return;
     }
-    if (file.size > MAX_FILE_BYTES) {
+    const tooBig = selectedFiles.find(f => f.size > MAX_FILE_BYTES);
+    if (tooBig) {
       fileSendStatus.style.color = '#C0472B';
-      fileSendStatus.textContent = 'حجم فایل بیشتر از ۸ مگابایت است.';
+      fileSendStatus.textContent = `حجم «${tooBig.name}» بیشتر از ۸ مگابایت است.`;
       return;
     }
 
     fileSendBtn.disabled = true;
-    fileSendStatus.style.color = '#7F9A9C';
-    fileSendStatus.textContent = 'در حال ارسال...';
 
-    const reader = new FileReader();
-    reader.onload = async () => {
-      // خروجی FileReader.readAsDataURL شکل «data:mime;base64,XXXX» است — فقط بخش base64 لازم است
-      const base64 = reader.result.split(',')[1];
+    const readAsBase64 = (file) => new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result.split(',')[1]);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+
+    let sentCount = 0;
+    let failedNames = [];
+
+    for (const file of selectedFiles) {
+      fileSendStatus.style.color = '#7F9A9C';
+      fileSendStatus.textContent = `در حال ارسال ${sentCount + 1} از ${selectedFiles.length}...`;
       try {
+        const base64 = await readAsBase64(file);
         const data = await sahelApiCall({
           action: 'sendFile',
           senderId: sahelUser.id,
@@ -301,28 +349,34 @@ if (fileSendBtn) {
           fileData: base64
         });
         if (data.success) {
-          fileSendStatus.style.color = '#2FB8A6';
-          fileSendStatus.textContent = 'فایل ارسال شد.';
-          fileInput.value = '';
-          fileInputLabel.textContent = 'انتخاب فایل (PDF، اکسل یا عکس)';
-          fileUploadLabel.classList.remove('has-file');
-          setTimeout(() => {
-            fileSendForm.style.display = 'none';
-            newFileBtn.classList.remove('is-open');
-            fileSendStatus.textContent = '';
-          }, 1200);
+          sentCount++;
         } else {
-          fileSendStatus.style.color = '#C0472B';
-          fileSendStatus.textContent = data.message || 'خطا در ارسال فایل.';
+          failedNames.push(file.name);
         }
       } catch (err) {
-        fileSendStatus.style.color = '#C0472B';
-        fileSendStatus.textContent = 'خطا در برقراری ارتباط با سرور.';
-      } finally {
-        fileSendBtn.disabled = false;
+        failedNames.push(file.name);
       }
-    };
-    reader.readAsDataURL(file);
+    }
+
+    fileSendBtn.disabled = false;
+
+    if (!failedNames.length) {
+      fileSendStatus.style.color = '#2FB8A6';
+      fileSendStatus.textContent = sentCount > 1 ? `${toFaDigits(sentCount)} فایل ارسال شد.` : 'فایل ارسال شد.';
+      selectedFiles = [];
+      renderFileChips();
+      setTimeout(() => {
+        fileSendForm.style.display = 'none';
+        newFileBtn.classList.remove('is-open');
+        fileSendStatus.textContent = '';
+      }, 1400);
+    } else {
+      fileSendStatus.style.color = '#C0472B';
+      fileSendStatus.textContent = `ارسال ناموفق: ${failedNames.join('، ')}`;
+      // فایل‌های موفق را از لیست حذف کن، فقط ناموفق‌ها بمونن برای تلاش دوباره
+      selectedFiles = selectedFiles.filter(f => failedNames.includes(f.name));
+      renderFileChips();
+    }
   });
 }
 
