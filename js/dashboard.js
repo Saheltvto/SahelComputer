@@ -5,6 +5,14 @@ if (!sahelUserRaw) {
 }
 const sahelUser = sahelUserRaw ? JSON.parse(sahelUserRaw) : null;
 
+/* ===== ابزار مشترک: موقعیت‌دهی یک پنل ثابت زیر دکمه‌ی محرک آن ===== */
+function positionPanel(panel, trigger) {
+  const rect = trigger.getBoundingClientRect();
+  panel.style.top = (rect.bottom + 10) + 'px';
+  panel.style.right = (window.innerWidth - rect.right) + 'px';
+  panel.style.left = 'auto';
+}
+
 /* ===== منوی کاربر (باز شدن با کلیک روی نام، بستن با کلیک بیرون) ===== */
 const topbarUser = document.getElementById('topbarUser');
 const userDropdown = document.getElementById('userDropdown');
@@ -12,10 +20,12 @@ const userDropdown = document.getElementById('userDropdown');
 if (topbarUser && userDropdown) {
   topbarUser.addEventListener('click', (e) => {
     e.stopPropagation();
-    userDropdown.style.display = userDropdown.style.display === 'block' ? 'none' : 'block';
-  });
-  document.addEventListener('click', () => {
-    userDropdown.style.display = 'none';
+    const isOpen = userDropdown.style.display === 'block';
+    closeAllPanels();
+    if (!isOpen) {
+      positionPanel(userDropdown, topbarUser);
+      userDropdown.style.display = 'block';
+    }
   });
   userDropdown.addEventListener('click', (e) => e.stopPropagation());
 }
@@ -112,6 +122,11 @@ const fileList = document.getElementById('fileList');
 
 let recipientsLoaded = false;
 
+function closeAllPanels() {
+  if (userDropdown) userDropdown.style.display = 'none';
+  if (filePanel) filePanel.style.display = 'none';
+}
+
 function toFaDigits(n) {
   const fa = ['۰','۱','۲','۳','۴','۵','۶','۷','۸','۹'];
   return String(n).replace(/[0-9]/g, d => fa[d]);
@@ -129,7 +144,7 @@ async function loadFileInbox() {
   try {
     const data = await sahelApiCall({ action: 'getFiles', userId: sahelUser.id });
     if (!data.success) {
-      fileList.innerHTML = '<div class="file-empty">خطا در دریافت فایل‌ها.</div>';
+      fileList.innerHTML = '<div class="file-empty">' + (data.message || 'خطا در دریافت فایل‌ها.') + '</div>';
       return;
     }
     updateFileBadge(data.unreadCount || 0);
@@ -163,14 +178,21 @@ function renderFileList(files) {
 
 async function loadRecipients() {
   if (recipientsLoaded) return;
+  fileRecipient.innerHTML = '<option value="">در حال بارگذاری کاربران...</option>';
   try {
     const data = await sahelApiCall({ action: 'getUsers', userId: sahelUser.id });
-    if (data.success) {
-      fileRecipient.innerHTML = data.users.map(u => `<option value="${u.id}">${u.name}</option>`).join('');
+    if (data.success && data.users && data.users.length) {
+      fileRecipient.innerHTML =
+        '<option value="">انتخاب گیرنده...</option>' +
+        data.users.map(u => `<option value="${u.id}">${u.name}</option>`).join('');
       recipientsLoaded = true;
+    } else {
+      // اگر success=false برگشت یعنی سرور اکشن getUsers را نمی‌شناسد —
+      // معمولاً چون Apps Script بعد از تغییر کد، دوباره Deploy نشده است.
+      fileRecipient.innerHTML = '<option value="">' + (data.message || 'خطا در دریافت کاربران — Apps Script را دوباره Deploy کنید') + '</option>';
     }
   } catch (err) {
-    fileRecipient.innerHTML = '<option value="">خطا در دریافت کاربران</option>';
+    fileRecipient.innerHTML = '<option value="">خطا در برقراری ارتباط با سرور</option>';
   }
 }
 
@@ -178,9 +200,9 @@ if (fileTransferBtn && filePanel) {
   fileTransferBtn.addEventListener('click', (e) => {
     e.stopPropagation();
     const isOpen = filePanel.style.display === 'flex';
-    if (isOpen) {
-      filePanel.style.display = 'none';
-    } else {
+    closeAllPanels();
+    if (!isOpen) {
+      positionPanel(filePanel, fileTransferBtn);
       filePanel.style.display = 'flex';
       loadFileInbox();
       loadRecipients();
@@ -193,10 +215,10 @@ if (fileTransferBtn && filePanel) {
     }
   });
   filePanel.addEventListener('click', (e) => e.stopPropagation());
-  document.addEventListener('click', () => {
-    filePanel.style.display = 'none';
-  });
 }
+
+document.addEventListener('click', closeAllPanels);
+window.addEventListener('resize', closeAllPanels);
 
 if (newFileBtn) {
   newFileBtn.addEventListener('click', () => {
