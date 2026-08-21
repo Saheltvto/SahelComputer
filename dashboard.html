@@ -153,6 +153,36 @@
   .file-upload.has-file { border-style: solid; border-color: #2FB8A6; color: #0B3D42; background: rgba(47,184,166,0.06); }
   #fileInputLabel { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
+  #fileChipsList { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+  .file-chip {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 10px;
+    background: #fff;
+    border: 1px solid #E0EAEA;
+    border-radius: 8px;
+    font-size: 12.3px;
+    color: #0B3D42;
+  }
+  .file-chip-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .file-chip-size { color: #7F9A9C; font-size: 11px; flex-shrink: 0; }
+  .file-chip-remove {
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(192,71,43,0.1);
+    color: #C0472B;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background .15s ease;
+  }
+  .file-chip-remove:hover { background: #C0472B; color: #fff; }
+
   #fileSendBtn {
     width: 100%;
     padding: 10px;
@@ -282,12 +312,13 @@
         </select>
       </div>
       <div>
-        <div class="field-label">فایل</div>
+        <div class="field-label">فایل‌ها</div>
         <label class="file-upload" for="fileInput" id="fileUploadLabel">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 16V4M12 4L7 9M12 4L17 9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 16V18C4 19.1 4.9 20 6 20H18C19.1 20 20 19.1 20 18V16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-          <span id="fileInputLabel">انتخاب فایل (PDF، اکسل یا عکس)</span>
+          <span id="fileInputLabel">انتخاب فایل (چند فایل هم‌زمان ممکن است)</span>
         </label>
-        <input type="file" id="fileInput" accept=".pdf,.xlsx,.xls,.png,.jpg,.jpeg" style="display:none;">
+        <input type="file" id="fileInput" accept=".pdf,.xlsx,.xls,.png,.jpg,.jpeg" multiple style="display:none;">
+        <div id="fileChipsList"></div>
       </div>
       <button type="button" id="fileSendBtn">ارسال فایل</button>
       <span id="fileSendStatus"></span>
