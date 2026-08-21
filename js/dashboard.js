@@ -95,3 +95,180 @@ async function loadDashboard() {
 if (sahelUser) {
   loadDashboard();
 }
+
+/* ===== صندوق ارسال/دریافت فایل ===== */
+const MAX_FILE_BYTES = 8 * 1024 * 1024; // ۸ مگابایت
+
+const fileTransferBtn = document.getElementById('fileTransferBtn');
+const filePanel = document.getElementById('filePanel');
+const fileBadge = document.getElementById('fileBadge');
+const newFileBtn = document.getElementById('newFileBtn');
+const fileSendForm = document.getElementById('fileSendForm');
+const fileRecipient = document.getElementById('fileRecipient');
+const fileInput = document.getElementById('fileInput');
+const fileSendBtn = document.getElementById('fileSendBtn');
+const fileSendStatus = document.getElementById('fileSendStatus');
+const fileList = document.getElementById('fileList');
+
+let recipientsLoaded = false;
+
+function toFaDigits(n) {
+  const fa = ['۰','۱','۲','۳','۴','۵','۶','۷','۸','۹'];
+  return String(n).replace(/[0-9]/g, d => fa[d]);
+}
+
+function formatFileDate(d) {
+  try {
+    return new Date(d).toLocaleDateString('fa-IR', { year: 'numeric', month: '2-digit', day: '2-digit' });
+  } catch (e) {
+    return '';
+  }
+}
+
+async function loadFileInbox() {
+  try {
+    const data = await sahelApiCall({ action: 'getFiles', userId: sahelUser.id });
+    if (!data.success) {
+      fileList.innerHTML = '<div class="file-empty">خطا در دریافت فایل‌ها.</div>';
+      return;
+    }
+    updateFileBadge(data.unreadCount || 0);
+    renderFileList(data.files || []);
+  } catch (err) {
+    fileList.innerHTML = '<div class="file-empty">خطا در برقراری ارتباط با سرور.</div>';
+  }
+}
+
+function updateFileBadge(count) {
+  if (count > 0) {
+    fileBadge.style.display = 'flex';
+    fileBadge.textContent = toFaDigits(count);
+  } else {
+    fileBadge.style.display = 'none';
+  }
+}
+
+function renderFileList(files) {
+  if (!files.length) {
+    fileList.innerHTML = '<div class="file-empty">فایلی دریافت نشده است.</div>';
+    return;
+  }
+  fileList.innerHTML = files.map(f => `
+    <a class="file-item ${f.status === 'نخوانده' ? 'unread' : ''}" href="${f.url}" target="_blank" rel="noopener">
+      <b>${f.fileName}</b>
+      <span>از طرف ${f.senderName} · ${formatFileDate(f.date)}</span>
+    </a>
+  `).join('');
+}
+
+async function loadRecipients() {
+  if (recipientsLoaded) return;
+  try {
+    const data = await sahelApiCall({ action: 'getUsers', userId: sahelUser.id });
+    if (data.success) {
+      fileRecipient.innerHTML = data.users.map(u => `<option value="${u.id}">${u.name}</option>`).join('');
+      recipientsLoaded = true;
+    }
+  } catch (err) {
+    fileRecipient.innerHTML = '<option value="">خطا در دریافت کاربران</option>';
+  }
+}
+
+if (fileTransferBtn && filePanel) {
+  fileTransferBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const isOpen = filePanel.style.display === 'flex';
+    if (isOpen) {
+      filePanel.style.display = 'none';
+    } else {
+      filePanel.style.display = 'flex';
+      loadFileInbox();
+      loadRecipients();
+      // فایل‌های نخوانده را با کمی تأخیر علامت خوانده‌شده بزن تا کاربر لیست را ببیند
+      setTimeout(() => {
+        sahelApiCall({ action: 'markFilesRead', userId: sahelUser.id })
+          .then(() => updateFileBadge(0))
+          .catch(() => {});
+      }, 1500);
+    }
+  });
+  filePanel.addEventListener('click', (e) => e.stopPropagation());
+  document.addEventListener('click', () => {
+    filePanel.style.display = 'none';
+  });
+}
+
+if (newFileBtn) {
+  newFileBtn.addEventListener('click', () => {
+    fileSendForm.style.display = fileSendForm.style.display === 'flex' ? 'none' : 'flex';
+    fileSendStatus.textContent = '';
+  });
+}
+
+if (fileSendBtn) {
+  fileSendBtn.addEventListener('click', () => {
+    const receiverId = fileRecipient.value;
+    const file = fileInput.files[0];
+
+    if (!receiverId) {
+      fileSendStatus.style.color = '#C0472B';
+      fileSendStatus.textContent = 'گیرنده را انتخاب کنید.';
+      return;
+    }
+    if (!file) {
+      fileSendStatus.style.color = '#C0472B';
+      fileSendStatus.textContent = 'یک فایل انتخاب کنید.';
+      return;
+    }
+    if (file.size > MAX_FILE_BYTES) {
+      fileSendStatus.style.color = '#C0472B';
+      fileSendStatus.textContent = 'حجم فایل بیشتر از ۸ مگابایت است.';
+      return;
+    }
+
+    fileSendBtn.disabled = true;
+    fileSendStatus.style.color = '#7F9A9C';
+    fileSendStatus.textContent = 'در حال ارسال...';
+
+    const reader = new FileReader();
+    reader.onload = async () => {
+      // خروجی FileReader.readAsDataURL شکل «data:mime;base64,XXXX» است — فقط بخش base64 لازم است
+      const base64 = reader.result.split(',')[1];
+      try {
+        const data = await sahelApiCall({
+          action: 'sendFile',
+          senderId: sahelUser.id,
+          receiverId: receiverId,
+          fileName: file.name,
+          mimeType: file.type,
+          fileData: base64
+        });
+        if (data.success) {
+          fileSendStatus.style.color = '#2FB8A6';
+          fileSendStatus.textContent = 'فایل ارسال شد.';
+          fileInput.value = '';
+          setTimeout(() => {
+            fileSendForm.style.display = 'none';
+            fileSendStatus.textContent = '';
+          }, 1200);
+        } else {
+          fileSendStatus.style.color = '#C0472B';
+          fileSendStatus.textContent = data.message || 'خطا در ارسال فایل.';
+        }
+      } catch (err) {
+        fileSendStatus.style.color = '#C0472B';
+        fileSendStatus.textContent = 'خطا در برقراری ارتباط با سرور.';
+      } finally {
+        fileSendBtn.disabled = false;
+      }
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+/* بارگذاری اولیه‌ی تعداد فایل‌های نخوانده برای نمایش روی زنگوله (بدون باز کردن پنل) */
+if (sahelUser) {
+  sahelApiCall({ action: 'getFiles', userId: sahelUser.id })
+    .then(data => { if (data.success) updateFileBadge(data.unreadCount || 0); })
+    .catch(() => {});
+}
