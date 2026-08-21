@@ -163,6 +163,20 @@ function updateFileBadge(count) {
   }
 }
 
+function fileTypeIcon(fileName) {
+  const ext = (fileName || '').split('.').pop().toLowerCase();
+  if (ext === 'pdf') {
+    return '<svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M6 2H14L20 8V20C20 21.1 19.1 22 18 22H6C4.9 22 4 21.1 4 20V4C4 2.9 4.9 2 6 2Z" stroke="currentColor" stroke-width="1.6"/><path d="M14 2V8H20" stroke="currentColor" stroke-width="1.6"/></svg>';
+  }
+  if (ext === 'xlsx' || ext === 'xls') {
+    return '<svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M6 2H14L20 8V20C20 21.1 19.1 22 18 22H6C4.9 22 4 21.1 4 20V4C4 2.9 4.9 2 6 2Z" stroke="currentColor" stroke-width="1.6"/><path d="M9 13L15 19M15 13L9 19" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>';
+  }
+  if (['png','jpg','jpeg','gif','webp'].includes(ext)) {
+    return '<svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="16" rx="2" stroke="currentColor" stroke-width="1.6"/><circle cx="9" cy="10" r="1.6" fill="currentColor"/><path d="M4 18L9.5 13L13 16L16 12.5L20 17" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  }
+  return '<svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M6 2H14L20 8V20C20 21.1 19.1 22 18 22H6C4.9 22 4 21.1 4 20V4C4 2.9 4.9 2 6 2Z" stroke="currentColor" stroke-width="1.6"/></svg>';
+}
+
 function renderFileList(files) {
   if (!files.length) {
     fileList.innerHTML = '<div class="file-empty">فایلی دریافت نشده است.</div>';
@@ -170,8 +184,12 @@ function renderFileList(files) {
   }
   fileList.innerHTML = files.map(f => `
     <a class="file-item ${f.status === 'نخوانده' ? 'unread' : ''}" href="${f.url}" target="_blank" rel="noopener">
-      <b>${f.fileName}</b>
-      <span>از طرف ${f.senderName} · ${formatFileDate(f.date)}</span>
+      ${f.status === 'نخوانده' ? '<span class="unread-dot"></span>' : ''}
+      <div class="file-icon">${fileTypeIcon(f.fileName)}</div>
+      <div class="file-item-body">
+        <b>${f.fileName}</b>
+        <span>از طرف ${f.senderName} · ${formatFileDate(f.date)}</span>
+      </div>
     </a>
   `).join('');
 }
@@ -222,8 +240,25 @@ window.addEventListener('resize', closeAllPanels);
 
 if (newFileBtn) {
   newFileBtn.addEventListener('click', () => {
-    fileSendForm.style.display = fileSendForm.style.display === 'flex' ? 'none' : 'flex';
+    const isOpen = fileSendForm.style.display === 'flex';
+    fileSendForm.style.display = isOpen ? 'none' : 'flex';
+    newFileBtn.classList.toggle('is-open', !isOpen);
     fileSendStatus.textContent = '';
+  });
+}
+
+const fileUploadLabel = document.getElementById('fileUploadLabel');
+const fileInputLabel = document.getElementById('fileInputLabel');
+if (fileInput) {
+  fileInput.addEventListener('change', () => {
+    const file = fileInput.files[0];
+    if (file) {
+      fileInputLabel.textContent = file.name;
+      fileUploadLabel.classList.add('has-file');
+    } else {
+      fileInputLabel.textContent = 'انتخاب فایل (PDF، اکسل یا عکس)';
+      fileUploadLabel.classList.remove('has-file');
+    }
   });
 }
 
@@ -269,8 +304,11 @@ if (fileSendBtn) {
           fileSendStatus.style.color = '#2FB8A6';
           fileSendStatus.textContent = 'فایل ارسال شد.';
           fileInput.value = '';
+          fileInputLabel.textContent = 'انتخاب فایل (PDF، اکسل یا عکس)';
+          fileUploadLabel.classList.remove('has-file');
           setTimeout(() => {
             fileSendForm.style.display = 'none';
+            newFileBtn.classList.remove('is-open');
             fileSendStatus.textContent = '';
           }, 1200);
         } else {
