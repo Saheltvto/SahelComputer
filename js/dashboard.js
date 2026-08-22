@@ -40,7 +40,6 @@ if (logoutBtn) {
 /* ===== کارتابل ===== */
 const workspaceFrame = document.getElementById('workspaceFrame');
 const workspaceEmpty = document.getElementById('workspaceEmpty');
-const workspaceTabs = document.getElementById('workspaceTabs');
 
 function openWorkspace(url) {
   if (!url) {
@@ -53,25 +52,44 @@ function openWorkspace(url) {
   if (workspaceFrame.src !== url) workspaceFrame.src = url;
 }
 
-function renderWorkspaceTabs(workspaces) {
+/* ===== کشوی کارتابل اعضا (فقط مدیر) ===== */
+const membersSwitchBtn = document.getElementById('membersSwitchBtn');
+const membersPanel = document.getElementById('membersPanel');
+const membersList = document.getElementById('membersList');
+let activeMemberId = null;
+
+function renderMembersPanel(workspaces) {
   if (!workspaces || !workspaces.length) {
-    workspaceTabs.style.display = 'none';
-    workspaceTabs.innerHTML = '';
-    openWorkspace('');
+    membersList.innerHTML = '<div class="file-empty">کارتابلی ثبت نشده است.</div>';
     return;
   }
-  workspaceTabs.style.display = 'flex';
-  workspaceTabs.innerHTML = workspaces.map((w, i) =>
-    `<button class="btn ${i === 0 ? 'btn-primary' : 'btn-ghost'}" data-url="${w.appUrl}" data-i="${i}" style="padding:9px 18px; font-size:13.5px;">${w.name}</button>`
-  ).join('');
-  workspaceTabs.querySelectorAll('button').forEach(btn => {
-    btn.addEventListener('click', () => {
-      workspaceTabs.querySelectorAll('button').forEach(b => { b.classList.remove('btn-primary'); b.classList.add('btn-ghost'); });
-      btn.classList.remove('btn-ghost'); btn.classList.add('btn-primary');
-      openWorkspace(btn.dataset.url);
+  membersList.innerHTML = workspaces.map(w => `
+    <div class="member-row" data-id="${w.id}" data-url="${w.appUrl}">
+      <div class="member-avatar">${w.initials || initials(w.name)}</div>
+      <div class="member-info">
+        <b>${w.name}${String(w.id) === String(sahelUser.id) ? ' (شما)' : ''}</b>
+        <span>${w.role === 'admin' ? 'مدیر سیستم' : 'کاربر'}</span>
+      </div>
+      <div class="member-check">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M4 12L10 18L20 6" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+    </div>
+  `).join('');
+
+  membersList.querySelectorAll('.member-row').forEach(row => {
+    row.addEventListener('click', () => {
+      setActiveMember(row.dataset.id, row.dataset.url);
+      closeAllPanels();
     });
   });
-  openWorkspace(workspaces[0].appUrl);
+}
+
+function setActiveMember(id, url) {
+  activeMemberId = String(id);
+  membersList.querySelectorAll('.member-row').forEach(r => {
+    r.classList.toggle('active', r.dataset.id === activeMemberId);
+  });
+  openWorkspace(url);
 }
 
 function initials(name) {
@@ -86,18 +104,26 @@ async function loadDashboard() {
   document.getElementById('topbarAvatar').textContent = sahelUser.initials || initials(sahelUser.name);
 
   if (sahelUser.role === 'admin') {
+    membersSwitchBtn.style.display = 'flex';
     try {
       const data = await sahelApiCall({ action: 'dashboard', userId: sahelUser.id });
-      if (data.success) {
-        renderWorkspaceTabs(data.workspaces || []);
+      if (data.success && data.workspaces && data.workspaces.length) {
+        renderMembersPanel(data.workspaces);
+        const own = data.workspaces.find(w => String(w.id) === String(sahelUser.id));
+        if (own) {
+          setActiveMember(own.id, own.appUrl);
+        } else {
+          // اگر appUrl خود مدیر هنوز در شیت Users پر نشده باشد
+          openWorkspace(sahelUser.appUrl);
+        }
       } else {
-        openWorkspace('');
+        openWorkspace(sahelUser.appUrl);
       }
     } catch (err) {
-      openWorkspace('');
+      openWorkspace(sahelUser.appUrl);
     }
   } else {
-    workspaceTabs.style.display = 'none';
+    membersSwitchBtn.style.display = 'none';
     openWorkspace(sahelUser.appUrl);
   }
 }
@@ -125,6 +151,7 @@ let recipientsLoaded = false;
 function closeAllPanels() {
   if (userDropdown) userDropdown.style.display = 'none';
   if (filePanel) filePanel.style.display = 'none';
+  if (membersPanel) membersPanel.style.display = 'none';
 }
 
 function toFaDigits(n) {
@@ -233,6 +260,19 @@ if (fileTransferBtn && filePanel) {
     }
   });
   filePanel.addEventListener('click', (e) => e.stopPropagation());
+}
+
+if (membersSwitchBtn && membersPanel) {
+  membersSwitchBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const isOpen = membersPanel.style.display === 'flex';
+    closeAllPanels();
+    if (!isOpen) {
+      positionPanel(membersPanel, membersSwitchBtn);
+      membersPanel.style.display = 'flex';
+    }
+  });
+  membersPanel.addEventListener('click', (e) => e.stopPropagation());
 }
 
 document.addEventListener('click', closeAllPanels);
