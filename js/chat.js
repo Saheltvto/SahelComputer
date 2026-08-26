@@ -16,6 +16,12 @@ let activeChatContact = null;
 let chatContacts = [];
 let chatMessagesData = {};
 
+// تابع کمکی برای تبدیل اعداد به فارسی
+function toFaDigits(n) {
+  const fa = ['۰','۱','۲','۳','۴','۵','۶','۷','۸','۹'];
+  return String(n).replace(/[0-9]/g, d => fa[d]);
+}
+
 // بارگذاری مخاطبین چت
 window.sahelChatLoadContacts = async function() {
   try {
@@ -23,9 +29,12 @@ window.sahelChatLoadContacts = async function() {
     if (data.success && data.users) {
       chatContacts = data.users;
       renderChatContacts();
+    } else {
+      chatContactsList.innerHTML = '<div class="file-empty">خطا در بارگذاری کاربران</div>';
     }
   } catch (e) {
     console.error('Error loading chat contacts:', e);
+    chatContactsList.innerHTML = '<div class="file-empty">خطا در بارگذاری کاربران</div>';
   }
 };
 
@@ -36,21 +45,26 @@ function renderChatContacts() {
     return;
   }
   
-  chatContactsList.innerHTML = chatContacts.map(u => `
-    <div class="chat-contact-row" data-id="${u.id}">
-      <div class="member-avatar">${u.initials || u.name.slice(0, 2)}</div>
-      <div class="member-info">
-        <b>${u.name}</b>
-        <span class="chat-contact-last">برای شروع گفتگو کلیک کنید</span>
+  chatContactsList.innerHTML = chatContacts.map(u => {
+    const initials = u.initials || (u.name ? u.name.slice(0, 2) : '--');
+    return `
+      <div class="chat-contact-row" data-id="${u.id}">
+        <div class="member-avatar">${initials}</div>
+        <div class="member-info">
+          <b>${u.name}</b>
+          <span class="chat-contact-last">برای شروع گفتگو کلیک کنید</span>
+        </div>
       </div>
-    </div>
-  `).join('');
+    `;
+  }).join('');
   
   chatContactsList.querySelectorAll('.chat-contact-row').forEach(row => {
     row.addEventListener('click', () => {
       const contactId = row.dataset.id;
       const contact = chatContacts.find(c => String(c.id) === contactId);
-      openChatThread(contact);
+      if (contact) {
+        openChatThread(contact);
+      }
     });
   });
 }
@@ -78,9 +92,19 @@ async function loadChatMessages(contactId) {
     if (data.success) {
       chatMessagesData[contactId] = data.messages || [];
       renderChatMessages(contactId);
+      
+      // علامت‌گذاری پیام‌های خوانده شده
+      sahelApiCall({
+        action: 'markChatRead',
+        userId: sahelUser.id,
+        contactId: contactId
+      }).catch(() => {});
+    } else {
+      chatMessages.innerHTML = '<div style="text-align:center;color:#7F9A9C;padding:20px;">' + (data.message || 'خطا در بارگذاری پیام‌ها') + '</div>';
     }
   } catch (e) {
     console.error('Error loading chat messages:', e);
+    chatMessages.innerHTML = '<div style="text-align:center;color:#7F9A9C;padding:20px;">خطا در بارگذاری پیام‌ها</div>';
   }
 }
 
@@ -93,12 +117,18 @@ function renderChatMessages(contactId) {
     return;
   }
   
-  chatMessages.innerHTML = messages.map(msg => `
-    <div class="chat-bubble ${String(msg.senderId) === String(sahelUser.id) ? 'chat-bubble-out' : 'chat-bubble-in'}">
-      ${msg.text.replace(/https?:\/\/[^\s]+/g, url => `<a href="${url}" target="_blank">${url}</a>`)}
-      <span class="chat-bubble-time">${formatChatTime(msg.time)}</span>
-    </div>
-  `).join('');
+  chatMessages.innerHTML = messages.map(msg => {
+    const isOut = String(msg.senderId) === String(sahelUser.id);
+    const timeStr = formatChatTime(msg.time);
+    const textWithLinks = msg.text.replace(/https?:\/\/[^\s]+/g, url => `<a href="${url}" target="_blank">${url}</a>`);
+    
+    return `
+      <div class="chat-bubble ${isOut ? 'chat-bubble-out' : 'chat-bubble-in'}">
+        ${textWithLinks}
+        <span class="chat-bubble-time">${timeStr}</span>
+      </div>
+    `;
+  }).join('');
   
   chatMessages.scrollTop = chatMessages.scrollHeight;
 }
@@ -128,9 +158,12 @@ async function sendChatMessage() {
     if (data.success) {
       chatInput.value = '';
       await loadChatMessages(activeChatContact.id);
+    } else {
+      alert(data.message || 'خطا در ارسال پیام');
     }
   } catch (e) {
     console.error('Error sending message:', e);
+    alert('خطا در ارسال پیام');
   }
 }
 
@@ -152,6 +185,13 @@ if (chatBtn && chatPanel) {
     if (!isOpen) {
       positionPanel(chatPanel, chatBtn);
       chatPanel.style.display = 'flex';
+      
+      // نمایش لیست مخاطبین و بارگذاری مجدد
+      chatContactsView.style.display = 'flex';
+      chatThreadView.style.display = 'none';
+      chatBackBtn.style.display = 'none';
+      chatPanelTitle.textContent = 'گفتگوها';
+      
       if (window.sahelChatLoadContacts) window.sahelChatLoadContacts();
     }
   });
@@ -178,5 +218,9 @@ if (chatInput) {
 
 // بارگذاری اولیه مخاطبین
 if (sahelUser) {
-  setTimeout(() => window.sahelChatLoadContacts(), 1000);
+  setTimeout(() => {
+    if (window.sahelChatLoadContacts) {
+      window.sahelChatLoadContacts();
+    }
+  }, 1000);
 }
