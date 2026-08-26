@@ -52,19 +52,22 @@ function openWorkspace(url) {
 
 /* ===== شروع ===== */
 async function start() {
-  // نمایش کاربر
   document.getElementById('topbarName').textContent = sahelUser.name;
   document.getElementById('topbarRole').textContent = sahelUser.role === 'admin' ? 'مدیر سیستم' : 'کاربر';
   document.getElementById('topbarAvatar').textContent = sahelUser.initials || sahelUser.name.slice(0, 2);
 
-  // لود داشبورد (کارتابل اعضا)
+  // لود داشبورد
   try {
     const dashData = await sahelApiCall({ action: 'dashboard', userId: sahelUser.id });
     if (dashData.success && dashData.workspaces && dashData.workspaces.length) {
       document.getElementById('membersSwitchBtn').style.display = 'flex';
       renderMembers(dashData.workspaces);
       const own = dashData.workspaces.find(w => String(w.id) === String(sahelUser.id));
-      openWorkspace(own ? own.appUrl : sahelUser.appUrl);
+      if (own) {
+        setActiveMember(own);
+      } else {
+        openWorkspace(sahelUser.appUrl);
+      }
     } else {
       openWorkspace(sahelUser.appUrl);
     }
@@ -78,7 +81,7 @@ async function start() {
     if (rateData.success) displayRates(rateData.rates);
   } catch (e) {}
 
-  // لود کاربران برای فایل
+  // لود کاربران
   try {
     const userData = await sahelApiCall({ action: 'getUsers', userId: sahelUser.id });
     if (userData.success) renderRecipients(userData.users);
@@ -109,25 +112,50 @@ async function start() {
   } catch (e) {}
 }
 
-/* ===== نمایش اعضا ===== */
+/* ===== نمایش اعضا و مدیریت فعال ===== */
+let activeMemberId = null;
+
 function renderMembers(workspaces) {
   const membersList = document.getElementById('membersList');
   membersList.innerHTML = workspaces.map(w => `
-    <div class="member-row" data-url="${w.appUrl}">
+    <div class="member-row" data-id="${w.id}" data-url="${w.appUrl}" data-name="${w.name}">
       <div class="member-avatar">${w.initials || w.name.slice(0, 2)}</div>
       <div class="member-info">
         <b>${w.name}${String(w.id) === String(sahelUser.id) ? ' (شما)' : ''}</b>
         <span>${w.role === 'admin' ? 'مدیر سیستم' : 'کاربر'}</span>
       </div>
+      <div class="member-check">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M4 12L10 18L20 6" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
     </div>
   `).join('');
 
   membersList.querySelectorAll('.member-row').forEach(row => {
-    row.addEventListener('click', () => {
-      openWorkspace(row.dataset.url);
+    row.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const member = {
+        id: row.dataset.id,
+        url: row.dataset.url,
+        name: row.dataset.name
+      };
+      setActiveMember(member);
       closeAllPanels();
     });
   });
+}
+
+function setActiveMember(member) {
+  activeMemberId = String(member.id);
+  document.querySelectorAll('.member-row').forEach(r => {
+    r.classList.toggle('active', r.dataset.id === activeMemberId);
+  });
+  openWorkspace(member.url);
+  // نمایش نام عضو فعال
+  document.getElementById('topbarName').textContent = member.name;
+  document.getElementById('topbarRole').textContent = member.id === sahelUser.id ? 
+    (sahelUser.role === 'admin' ? 'مدیر سیستم' : 'کاربر') : 
+    'در حال مشاهده';
+  document.getElementById('topbarAvatar').textContent = member.name.slice(0, 2);
 }
 
 /* ===== نمایش فایل‌ها ===== */
@@ -174,7 +202,8 @@ function renderChatContacts(contacts) {
   `).join('');
 
   contactsList.querySelectorAll('.chat-contact-row').forEach(row => {
-    row.addEventListener('click', () => {
+    row.addEventListener('click', (e) => {
+      e.stopPropagation();
       openChatWith(row.dataset.id, row.dataset.name);
     });
   });
@@ -248,7 +277,13 @@ document.getElementById('chatSendBtn')?.addEventListener('click', async () => {
   } catch (e) {}
 });
 
-/* ===== بازگشت چت ===== */
+document.getElementById('chatInput')?.addEventListener('keypress', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    document.getElementById('chatSendBtn').click();
+  }
+});
+
 document.getElementById('chatBackBtn')?.addEventListener('click', () => {
   document.getElementById('chatThreadView').style.display = 'none';
   document.getElementById('chatContactsView').style.display = 'flex';
@@ -365,7 +400,14 @@ document.getElementById('fileTransferBtn')?.addEventListener('click', (e) => {
   if (!isOpen) {
     positionPanel(panel, e.currentTarget);
     panel.style.display = 'flex';
+    sahelApiCall({ action: 'getFiles', userId: sahelUser.id }).then(data => {
+      if (data.success) renderFiles(data.files);
+    }).catch(() => {});
   }
+});
+
+document.getElementById('filePanel')?.addEventListener('click', (e) => {
+  e.stopPropagation();
 });
 
 document.getElementById('membersSwitchBtn')?.addEventListener('click', (e) => {
@@ -377,6 +419,10 @@ document.getElementById('membersSwitchBtn')?.addEventListener('click', (e) => {
     positionPanel(panel, e.currentTarget);
     panel.style.display = 'flex';
   }
+});
+
+document.getElementById('membersPanel')?.addEventListener('click', (e) => {
+  e.stopPropagation();
 });
 
 document.getElementById('chatBtn')?.addEventListener('click', (e) => {
@@ -392,6 +438,10 @@ document.getElementById('chatBtn')?.addEventListener('click', (e) => {
     document.getElementById('chatBackBtn').style.display = 'none';
     document.getElementById('chatPanelTitle').textContent = 'گفتگوها';
   }
+});
+
+document.getElementById('chatPanel')?.addEventListener('click', (e) => {
+  e.stopPropagation();
 });
 
 document.getElementById('topbarUser')?.addEventListener('click', (e) => {
@@ -438,7 +488,7 @@ async function loadWeather() {
   } catch (e) {}
 }
 
-/* ===== شروع همه ===== */
+/* ===== شروع ===== */
 loadDate();
 loadWeather();
 start();
