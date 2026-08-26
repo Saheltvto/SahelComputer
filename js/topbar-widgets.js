@@ -1,11 +1,12 @@
 /* ===== نوار اطلاعات زنده: تاریخ شمسی، آب‌وهوا، نرخ‌ها ===== */
 
+// تبدیل اعداد انگلیسی به فارسی
 function toFaDigits(n) {
   const fa = ['۰','۱','۲','۳','۴','۵','۶','۷','۸','۹'];
   return String(n).replace(/[0-9]/g, d => fa[d]);
 }
 
-// تابع جدا کردن سه رقم سه رقم با کاما انگلیسی
+// جدا کردن سه رقم سه رقم با کاما انگلیسی
 function formatNumber(num) {
   const parts = String(num).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
   return toFaDigits(parts);
@@ -44,7 +45,7 @@ async function loadWeather() {
       else if (code <= 77) { desc = 'برفی'; icon = '❄️'; }
       else { desc = 'رگباری'; icon = '🌦️'; }
       
-      tiWeather.innerHTML = `${icon} ${toFaDigits(temp)}°C ${desc}`;
+      tiWeather.innerHTML = `${icon} <span class="weather-temp">${toFaDigits(temp)}°C</span> <span class="weather-desc">${desc}</span> <span class="weather-city">قشم</span>`;
     } else {
       tiWeather.textContent = '—';
     }
@@ -54,7 +55,7 @@ async function loadWeather() {
   }
 }
 
-// نرخ ارز و سکه از Apps Script
+// نرخ ارز و سکه از Apps Script (شیت Rates)
 async function loadRates() {
   const tiUsd = document.getElementById('tiUsd');
   const tiAed = document.getElementById('tiAed');
