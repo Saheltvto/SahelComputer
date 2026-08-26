@@ -304,27 +304,74 @@
   }
   .member-row.active .member-check { display: flex; }
 
-  /* --- نوار اطلاعات زنده (تاریخ، آب‌وهوا، نرخ‌ها) --- */
-  .topbar-info {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-inline-end: auto;
-    padding: 6px 14px;
-    background: #F6FAFA;
-    border: 1px solid #E9F1F1;
-    border-radius: 30px;
-    font-size: 12.5px;
-    color: #0B3D42;
-    white-space: nowrap;
-    overflow-x: auto;
-    max-width: 46vw;
-  }
-  .topbar-info::-webkit-scrollbar { display: none; }
-  .ti-item { display: flex; align-items: center; gap: 4px; font-weight: 600; flex-shrink: 0; }
-  .ti-sep { width: 1px; height: 12px; background: #DCE9E9; flex-shrink: 0; }
-  @media (max-width: 900px) { .topbar-info { display: none; } }
+/* --- نوار اطلاعات زنده (تاریخ، آب‌وهوا، نرخ‌ها) --- */
+.topbar-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-inline-end: auto;
+  padding: 8px 18px;
+  background: #F6FAFA;
+  border: 1px solid #E9F1F1;
+  border-radius: 30px;
+  font-size: 12.5px;
+  color: #0B3D42;
+  white-space: nowrap;
+  overflow-x: auto;
+  max-width: 46vw;
+  box-shadow: 0 2px 8px rgba(11,61,66,0.06);
+}
+.topbar-info::-webkit-scrollbar { display: none; }
+.ti-item { 
+  display: flex; 
+  align-items: center; 
+  gap: 6px; 
+  font-weight: 600; 
+  flex-shrink: 0;
+  padding: 4px 8px;
+  border-radius: 12px;
+  transition: background 0.15s ease;
+}
+.ti-item:hover {
+  background: rgba(47,184,166,0.08);
+}
+.ti-sep { 
+  width: 1px; 
+  height: 16px; 
+  background: #DCE9E9; 
+  flex-shrink: 0; 
+}
+@media (max-width: 900px) { 
+  .topbar-info { 
+    display: none; 
+  } 
+}
 
+/* استایل جداگانه برای هر آیتم */
+#tiDate {
+  color: #0B3D42;
+  font-weight: 700;
+}
+
+#tiWeather {
+  color: #1B6B76;
+  font-weight: 700;
+}
+
+#tiUsd {
+  color: #2FB8A6;
+  font-weight: 700;
+}
+
+#tiAed {
+  color: #C0472B;
+  font-weight: 700;
+}
+
+#tiCoin {
+  color: #B8860B;
+  font-weight: 700;
+}
   /* --- گوشه برند + شبکه‌های اجتماعی + شماره پشتیبانی --- */
   .topbar-brand-zone { display: flex; align-items: center; gap: 14px; }
   .brand-link { display: flex; align-items: center; gap: 8px; font-weight: 800; color: var(--deep, #0B3D42); text-decoration: none; }
