@@ -304,14 +304,13 @@
   }
   .member-row.active .member-check { display: flex; }
 
-/* --- نوار اطلاعات زنده (تاریخ، آب‌وهوا، نرخ‌ها) --- */
-/* --- استایل نوار اطلاعات زنده --- */
+/* --- نوار اطلاعات زنده --- */
 .topbar-info {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   margin-inline-end: auto;
-  padding: 8px 16px;
+  padding: 6px 14px;
   background: linear-gradient(135deg, #F6FAFA, #EAF6F4);
   border: 1px solid #E0EAEA;
   border-radius: 25px;
@@ -347,12 +346,11 @@
   flex-shrink: 0; 
 }
 
-/* استایل برچسب‌ها */
+/* استایل برچسب‌ها و مقادیر */
 .rate-label {
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 700;
   color: #7F9A9C;
-  margin-left: 2px;
 }
 
 .rate-value {
@@ -362,47 +360,41 @@
 }
 
 .date-value {
-  font-size: 12.5px;
+  font-size: 12px;
   font-weight: 700;
 }
 
-/* رنگ‌های جداگانه برای هر آیتم */
-#tiDate {
-  color: #0B3D42;
-}
-
-#tiWeather {
+/* استایل آب و هوا */
+.weather-temp {
+  font-size: 13px;
+  font-weight: 800;
   color: #1B6B76;
 }
 
-#tiUsd {
-  color: #2FB8A6;
+.weather-desc {
+  font-size: 11px;
+  font-weight: 600;
+  color: #14555C;
 }
 
-#tiUsd .rate-value {
-  color: #0B8F7A;
+.weather-city {
+  font-size: 10px;
+  font-weight: 700;
+  color: #7F9A9C;
+  background: rgba(47,184,166,0.15);
+  padding: 2px 6px;
+  border-radius: 8px;
 }
 
-#tiAed {
-  color: #C0472B;
-}
-
-#tiAed .rate-value {
-  color: #A03A22;
-}
-
-#tiCoin {
-  color: #B8860B;
-}
-
-#tiCoin .rate-value {
-  color: #9A7209;
-}
+/* رنگ‌های جداگانه */
+#tiDate { color: #0B3D42; }
+#tiWeather { color: #1B6B76; }
+#tiUsd .rate-value { color: #0B8F7A; }
+#tiAed .rate-value { color: #A03A22; }
+#tiCoin .rate-value { color: #9A7209; }
 
 @media (max-width: 900px) { 
-  .topbar-info { 
-    display: none; 
-  } 
+  .topbar-info { display: none; } 
 }
   /* --- گوشه برند + شبکه‌های اجتماعی + شماره پشتیبانی --- */
   .topbar-brand-zone { display: flex; align-items: center; gap: 14px; }
