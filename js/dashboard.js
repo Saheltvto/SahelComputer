@@ -50,7 +50,67 @@ function openWorkspace(url) {
   if (workspaceFrame.src !== url) workspaceFrame.src = url;
 }
 
+/* ===== شروع ===== */
 async function start() {
+  document.getElementById('topbarName').textContent = sahelUser.name;
+  document.getElementById('topbarRole').textContent = sahelUser.role === 'admin' ? 'مدیر سیستم' : 'کاربر';
+  document.getElementById('topbarAvatar').textContent = sahelUser.initials || sahelUser.name.slice(0, 2);
+
+  // لود داشبورد
+  try {
+    const dashData = await sahelApiCall({ action: 'dashboard', userId: sahelUser.id });
+    if (dashData.success && dashData.workspaces && dashData.workspaces.length) {
+      document.getElementById('membersSwitchBtn').style.display = 'flex';
+      renderMembers(dashData.workspaces);
+      const own = dashData.workspaces.find(w => String(w.id) === String(sahelUser.id));
+      if (own) {
+        setActiveMember(own);
+      } else {
+        openWorkspace(sahelUser.appUrl);
+      }
+    } else {
+      openWorkspace(sahelUser.appUrl);
+    }
+  } catch (e) {
+    openWorkspace(sahelUser.appUrl);
+  }
+
+  // لود نرخ‌ها
+  try {
+    const rateData = await sahelApiCall({ action: 'getRates' });
+    if (rateData.success) displayRates(rateData.rates);
+  } catch (e) {}
+
+  // لود کاربران
+  try {
+    const userData = await sahelApiCall({ action: 'getUsers', userId: sahelUser.id });
+    if (userData.success) renderRecipients(userData.users);
+  } catch (e) {}
+
+  // لود فایل‌ها
+  try {
+    const fileData = await sahelApiCall({ action: 'getFiles', userId: sahelUser.id });
+    if (fileData.success) {
+      renderFiles(fileData.files);
+      if (fileData.unreadCount > 0) {
+        document.getElementById('fileBadge').style.display = 'flex';
+        document.getElementById('fileBadge').textContent = toFaDigits(fileData.unreadCount);
+      }
+    }
+  } catch (e) {}
+
+  // لود مخاطبین چت
+  try {
+    const chatData = await sahelApiCall({ action: 'getChatContacts', userId: sahelUser.id });
+    if (chatData.success) {
+      renderChatContacts(chatData.users);
+      if (chatData.unreadCount > 0) {
+        document.getElementById('chatBadge').style.display = 'flex';
+        document.getElementById('chatBadge').textContent = toFaDigits(chatData.unreadCount);
+      }
+    }
+  } catch (e) {}
+}
 
 /* ===== نمایش اعضا و مدیریت فعال ===== */
 let activeMemberId = null;
