@@ -363,7 +363,145 @@ document.getElementById('logoutBtn')?.addEventListener('click', () => {
 /* ===== بستن پنل‌ها ===== */
 document.addEventListener('click', closeAllPanels);
 window.addEventListener('resize', closeAllPanels);
+/* ===== ارسال فایل ===== */
+const newFileBtn = document.getElementById('newFileBtn');
+const fileSendForm = document.getElementById('fileSendForm');
+const fileSendBtn = document.getElementById('fileSendBtn');
+const fileSendStatus = document.getElementById('fileSendStatus');
+const fileRecipient = document.getElementById('fileRecipient');
+const fileInput = document.getElementById('fileInput');
+const fileUploadLabel = document.getElementById('fileUploadLabel');
+const fileInputLabel = document.getElementById('fileInputLabel');
+const fileChipsList = document.getElementById('fileChipsList');
 
+let selectedFiles = [];
+
+function formatFileSize(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024 * 1024) return Math.round(bytes / 1024) + ' KB';
+  return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+}
+
+function renderFileChips() {
+  if (!selectedFiles.length) {
+    fileChipsList.innerHTML = '';
+    fileInputLabel.textContent = 'انتخاب فایل (چند فایل هم‌زمان ممکن است)';
+    fileUploadLabel.classList.remove('has-file');
+    return;
+  }
+  fileUploadLabel.classList.add('has-file');
+  fileInputLabel.textContent = selectedFiles.length === 1
+    ? selectedFiles[0].name
+    : `${selectedFiles.length} فایل انتخاب شد`;
+
+  fileChipsList.innerHTML = selectedFiles.map((f, i) => `
+    <div class="file-chip">
+      <span class="file-chip-name">${f.name}</span>
+      <span class="file-chip-size">${formatFileSize(f.size)}</span>
+      <button type="button" class="file-chip-remove" data-i="${i}">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+  `).join('');
+
+  fileChipsList.querySelectorAll('.file-chip-remove').forEach(btn => {
+    btn.addEventListener('click', () => {
+      selectedFiles.splice(Number(btn.dataset.i), 1);
+      renderFileChips();
+    });
+  });
+}
+
+newFileBtn?.addEventListener('click', () => {
+  const isOpen = fileSendForm.style.display === 'flex';
+  fileSendForm.style.display = isOpen ? 'none' : 'flex';
+  newFileBtn.classList.toggle('is-open', !isOpen);
+  fileSendStatus.textContent = '';
+});
+
+fileInput?.addEventListener('change', () => {
+  const newFiles = Array.from(fileInput.files);
+  newFiles.forEach(nf => {
+    const exists = selectedFiles.some(f => f.name === nf.name && f.size === nf.size);
+    if (!exists) selectedFiles.push(nf);
+  });
+  fileInput.value = '';
+  renderFileChips();
+});
+
+fileSendBtn?.addEventListener('click', async () => {
+  const receiverId = fileRecipient.value;
+
+  if (!receiverId) {
+    fileSendStatus.style.color = '#C0472B';
+    fileSendStatus.textContent = 'گیرنده را انتخاب کنید.';
+    return;
+  }
+  if (!selectedFiles.length) {
+    fileSendStatus.style.color = '#C0472B';
+    fileSendStatus.textContent = 'حداقل یک فایل انتخاب کنید.';
+    return;
+  }
+  const tooBig = selectedFiles.find(f => f.size > 8 * 1024 * 1024);
+  if (tooBig) {
+    fileSendStatus.style.color = '#C0472B';
+    fileSendStatus.textContent = `حجم «${tooBig.name}» بیشتر از ۸ مگابایت است.`;
+    return;
+  }
+
+  fileSendBtn.disabled = true;
+
+  const readAsBase64 = (file) => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result.split(',')[1]);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+
+  let sentCount = 0;
+  let failedNames = [];
+
+  for (const file of selectedFiles) {
+    fileSendStatus.style.color = '#7F9A9C';
+    fileSendStatus.textContent = `در حال ارسال ${sentCount + 1} از ${selectedFiles.length}...`;
+    try {
+      const base64 = await readAsBase64(file);
+      const data = await sahelApiCall({
+        action: 'sendFile',
+        senderId: sahelUser.id,
+        receiverId: receiverId,
+        fileName: file.name,
+        mimeType: file.type,
+        fileData: base64
+      });
+      if (data.success) {
+        sentCount++;
+      } else {
+        failedNames.push(file.name);
+      }
+    } catch (err) {
+      failedNames.push(file.name);
+    }
+  }
+
+  fileSendBtn.disabled = false;
+
+  if (!failedNames.length) {
+    fileSendStatus.style.color = '#2FB8A6';
+    fileSendStatus.textContent = sentCount > 1 ? `${toFaDigits(sentCount)} فایل ارسال شد.` : 'فایل ارسال شد.';
+    selectedFiles = [];
+    renderFileChips();
+    setTimeout(() => {
+      fileSendForm.style.display = 'none';
+      newFileBtn.classList.remove('is-open');
+      fileSendStatus.textContent = '';
+      loadAllData();
+    }, 1000);
+  } else {
+    fileSendStatus.style.color = '#C0472B';
+    fileSendStatus.textContent = `ارسال ناموفق: ${failedNames.join('، ')}`;
+  }
+});
 /* ===== شروع ===== */
 loadAllData();
 
