@@ -5,6 +5,9 @@ if (!sahelUserRaw) {
 }
 const sahelUser = sahelUserRaw ? JSON.parse(sahelUserRaw) : null;
 
+/* ===== متغیرهای سراسری ===== */
+let allData = null; // همه داده‌ها اینجا ذخیره میشود
+
 /* ===== ابزار مشترک ===== */
 function positionPanel(panel, trigger) {
   const rect = trigger.getBoundingClientRect();
@@ -13,46 +16,64 @@ function positionPanel(panel, trigger) {
   panel.style.left = 'auto';
 }
 
-/* ===== کش محلی برای داده‌ها ===== */
-const cache = {
-  set(key, data, ttl = 30000) {
-    const item = { data, expiry: Date.now() + ttl };
-    sessionStorage.setItem(key, JSON.stringify(item));
-  },
-  get(key) {
-    const item = sessionStorage.getItem(key);
-    if (!item) return null;
-    const parsed = JSON.parse(item);
-    if (Date.now() > parsed.expiry) {
-      sessionStorage.removeItem(key);
-      return null;
-    }
-    return parsed.data;
-  }
-};
-
-/* ===== منوی کاربر ===== */
-const topbarUser = document.getElementById('topbarUser');
-const userDropdown = document.getElementById('userDropdown');
-
-if (topbarUser && userDropdown) {
-  topbarUser.addEventListener('click', (e) => {
-    e.stopPropagation();
-    const isOpen = userDropdown.style.display === 'block';
-    closeAllPanels();
-    if (!isOpen) {
-      positionPanel(userDropdown, topbarUser);
-      userDropdown.style.display = 'block';
-    }
+function closeAllPanels() {
+  document.querySelectorAll('.user-dropdown, .file-panel, .members-panel, .chat-panel').forEach(p => {
+    p.style.display = 'none';
   });
-  userDropdown.addEventListener('click', (e) => e.stopPropagation());
 }
 
-const logoutBtn = document.getElementById('logoutBtn');
-if (logoutBtn) {
-  logoutBtn.addEventListener('click', () => {
-    sessionStorage.removeItem('sahel_user');
-  });
+function toFaDigits(n) {
+  const fa = ['۰','۱','۲','۳','۴','۵','۶','۷','۸','۹'];
+  return String(n).replace(/[0-9]/g, d => fa[d]);
+}
+
+/* ===== بارگذاری اولیه همه داده‌ها ===== */
+async function loadAllData() {
+  try {
+    document.getElementById('topbarName').textContent = sahelUser.name;
+    document.getElementById('topbarRole').textContent = sahelUser.role === 'admin' ? 'مدیر سیستم' : 'کاربر';
+    document.getElementById('topbarAvatar').textContent = sahelUser.initials || sahelUser.name.slice(0, 2);
+    
+    // یک درخواست برای همه چیز
+    const data = await sahelApiCall({ action: 'getAll', userId: sahelUser.id });
+    
+    if (data.success) {
+      allData = data;
+      
+      // نمایش کارتابل
+      if (sahelUser.role === 'admin' && data.workspaces.length) {
+        document.getElementById('membersSwitchBtn').style.display = 'flex';
+        renderMembers(data.workspaces);
+        const own = data.workspaces.find(w => String(w.id) === String(sahelUser.id));
+        openWorkspace(own ? own.appUrl : sahelUser.appUrl);
+      } else {
+        openWorkspace(sahelUser.appUrl);
+      }
+      
+      // نمایش فایل‌ها
+      if (data.unreadFiles > 0) {
+        document.getElementById('fileBadge').style.display = 'flex';
+        document.getElementById('fileBadge').textContent = toFaDigits(data.unreadFiles);
+      }
+      
+      // نمایش چت
+      if (data.unreadChats > 0) {
+        document.getElementById('chatBadge').style.display = 'flex';
+        document.getElementById('chatBadge').textContent = toFaDigits(data.unreadChats);
+      }
+      
+      // نمایش نرخ‌ها
+      displayRates(data.rates);
+      
+      // نمایش مخاطبین چت
+      renderChatContacts(data.contacts);
+    } else {
+      openWorkspace(sahelUser.appUrl);
+    }
+  } catch (err) {
+    console.error('Error loading data:', err);
+    openWorkspace(sahelUser.appUrl);
+  }
 }
 
 /* ===== کارتابل ===== */
@@ -70,474 +91,128 @@ function openWorkspace(url) {
   if (workspaceFrame.src !== url) workspaceFrame.src = url;
 }
 
-/* ===== کشوی کارتابل اعضا ===== */
-const membersSwitchBtn = document.getElementById('membersSwitchBtn');
-const membersPanel = document.getElementById('membersPanel');
-const membersList = document.getElementById('membersList');
-let activeMemberId = null;
-let membersLoaded = false;
-let membersLoading = false;
-
-window.sahelWorkspaces = [];
-
-function renderMembersPanel(workspaces) {
-  if (!workspaces || !workspaces.length) {
-    membersList.innerHTML = '<div class="file-empty">کارتابلی ثبت نشده است.</div>';
-    return;
-  }
-  
+/* ===== نمایش اعضا ===== */
+function renderMembers(workspaces) {
+  const membersList = document.getElementById('membersList');
   membersList.innerHTML = workspaces.map(w => `
     <div class="member-row" data-id="${w.id}" data-url="${w.appUrl}">
-      <div class="member-avatar">${w.initials || initials(w.name)}</div>
+      <div class="member-avatar">${w.initials || w.name.slice(0, 2)}</div>
       <div class="member-info">
         <b>${w.name}${String(w.id) === String(sahelUser.id) ? ' (شما)' : ''}</b>
         <span>${w.role === 'admin' ? 'مدیر سیستم' : 'کاربر'}</span>
       </div>
-      <div class="member-check">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M4 12L10 18L20 6" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      </div>
     </div>
   `).join('');
-
+  
   membersList.querySelectorAll('.member-row').forEach(row => {
     row.addEventListener('click', () => {
-      setActiveMember(row.dataset.id, row.dataset.url);
+      openWorkspace(row.dataset.url);
       closeAllPanels();
     });
   });
 }
 
-function setActiveMember(id, url) {
-  activeMemberId = String(id);
-  membersList.querySelectorAll('.member-row').forEach(r => {
-    r.classList.toggle('active', r.dataset.id === activeMemberId);
-  });
-  openWorkspace(url);
-}
-
-function initials(name) {
-  if (!name) return '–';
-  const parts = String(name).trim().split(/\s+/);
-  return parts.length > 1 ? parts[0][0] + parts[1][0] : parts[0].slice(0, 2);
-}
-
-/* ===== بارگذاری داشبورد ===== */
-async function loadDashboard() {
-  document.getElementById('topbarName').textContent = sahelUser.name;
-  document.getElementById('topbarRole').textContent = sahelUser.role === 'admin' ? 'مدیر سیستم' : 'کاربر';
-  document.getElementById('topbarAvatar').textContent = sahelUser.initials || initials(sahelUser.name);
-
-  if (sahelUser.role === 'admin') {
-    membersSwitchBtn.style.display = 'flex';
-    
-    // اول از کش بخوان
-    const cachedWorkspaces = cache.get('workspaces');
-    if (cachedWorkspaces) {
-      window.sahelWorkspaces = cachedWorkspaces;
-      renderMembersPanel(cachedWorkspaces);
-      const own = cachedWorkspaces.find(w => String(w.id) === String(sahelUser.id));
-      if (own) {
-        setActiveMember(own.id, own.appUrl);
-      } else {
-        openWorkspace(sahelUser.appUrl);
-      }
-      membersLoaded = true;
-    }
-    
-    // بعد در پس‌زمینه از سرور بگیر
-    loadMembersFromServer();
-  } else {
-    membersSwitchBtn.style.display = 'none';
-    openWorkspace(sahelUser.appUrl);
-  }
-
-  // لود چت در پس‌زمینه
-  if (window.sahelChatLoadContacts) {
-    setTimeout(() => window.sahelChatLoadContacts(), 500);
-  }
-}
-
-async function loadMembersFromServer() {
-  if (membersLoading) return;
-  membersLoading = true;
-  
-  try {
-    const data = await sahelApiCall({ action: 'dashboard', userId: sahelUser.id });
-    if (data.success && data.workspaces && data.workspaces.length) {
-      window.sahelWorkspaces = data.workspaces;
-      cache.set('workspaces', data.workspaces, 60000); // کش ۱ دقیقه
-      renderMembersPanel(data.workspaces);
-      membersLoaded = true;
-      
-      const own = data.workspaces.find(w => String(w.id) === String(sahelUser.id));
-      if (own && !activeMemberId) {
-        setActiveMember(own.id, own.appUrl);
-      } else if (!activeMemberId) {
-        openWorkspace(sahelUser.appUrl);
-      }
-    }
-  } catch (err) {
-    console.error('Error loading members:', err);
-    if (!membersLoaded) {
-      membersList.innerHTML = '<div class="file-empty">خطا در بارگذاری — دوباره تلاش کنید</div>';
-    }
-  } finally {
-    membersLoading = false;
-  }
-}
-
-if (sahelUser) {
-  loadDashboard();
-}
-
-/* ===== صندوق فایل ===== */
-const MAX_FILE_BYTES = 8 * 1024 * 1024;
-
-const fileTransferBtn = document.getElementById('fileTransferBtn');
-const filePanel = document.getElementById('filePanel');
-const fileBadge = document.getElementById('fileBadge');
-const newFileBtn = document.getElementById('newFileBtn');
-const fileSendForm = document.getElementById('fileSendForm');
-const fileRecipient = document.getElementById('fileRecipient');
-const fileInput = document.getElementById('fileInput');
-const fileSendBtn = document.getElementById('fileSendBtn');
-const fileSendStatus = document.getElementById('fileSendStatus');
-const fileList = document.getElementById('fileList');
-
-let recipientsLoaded = false;
-let filesLoaded = false;
-let filesLoading = false;
-
-function closeAllPanels() {
-  if (userDropdown) userDropdown.style.display = 'none';
-  if (filePanel) filePanel.style.display = 'none';
-  if (membersPanel) membersPanel.style.display = 'none';
-  const chatPanel = document.getElementById('chatPanel');
-  if (chatPanel) chatPanel.style.display = 'none';
-}
-
-function toFaDigits(n) {
-  const fa = ['۰','۱','۲','۳','۴','۵','۶','۷','۸','۹'];
-  return String(n).replace(/[0-9]/g, d => fa[d]);
-}
-
-function formatFileDate(d) {
-  try {
-    return new Date(d).toLocaleDateString('fa-IR', { year: 'numeric', month: '2-digit', day: '2-digit' });
-  } catch (e) {
-    return '';
-  }
-}
-
-async function loadFileInbox() {
-  if (filesLoading) return;
-  filesLoading = true;
-  
-  // اول از کش بخوان
-  const cachedFiles = cache.get('files_' + sahelUser.id);
-  if (cachedFiles) {
-    renderFileList(cachedFiles.files);
-    updateFileBadge(cachedFiles.unreadCount);
-  }
-  
-  try {
-    const data = await sahelApiCall({ action: 'getFiles', userId: sahelUser.id });
-    if (data.success) {
-      cache.set('files_' + sahelUser.id, { files: data.files || [], unreadCount: data.unreadCount || 0 }, 30000);
-      updateFileBadge(data.unreadCount || 0);
-      renderFileList(data.files || []);
-      filesLoaded = true;
-    } else {
-      if (!filesLoaded) {
-        fileList.innerHTML = '<div class="file-empty">' + (data.message || 'خطا در دریافت فایل‌ها.') + '</div>';
-      }
-    }
-  } catch (err) {
-    if (!filesLoaded) {
-      fileList.innerHTML = '<div class="file-empty">خطا در برقراری ارتباط با سرور.</div>';
-    }
-  } finally {
-    filesLoading = false;
-  }
-}
-
-function updateFileBadge(count) {
-  if (count > 0) {
-    fileBadge.style.display = 'flex';
-    fileBadge.textContent = toFaDigits(count);
-  } else {
-    fileBadge.style.display = 'none';
-  }
-}
-
-function fileTypeIcon(fileName) {
-  const ext = (fileName || '').split('.').pop().toLowerCase();
-  if (ext === 'pdf') {
-    return '<svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M6 2H14L20 8V20C20 21.1 19.1 22 18 22H6C4.9 22 4 21.1 4 20V4C4 2.9 4.9 2 6 2Z" stroke="currentColor" stroke-width="1.6"/><path d="M14 2V8H20" stroke="currentColor" stroke-width="1.6"/></svg>';
-  }
-  if (ext === 'xlsx' || ext === 'xls') {
-    return '<svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M6 2H14L20 8V20C20 21.1 19.1 22 18 22H6C4.9 22 4 21.1 4 20V4C4 2.9 4.9 2 6 2Z" stroke="currentColor" stroke-width="1.6"/><path d="M9 13L15 19M15 13L9 19" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>';
-  }
-  if (['png','jpg','jpeg','gif','webp'].includes(ext)) {
-    return '<svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="16" rx="2" stroke="currentColor" stroke-width="1.6"/><circle cx="9" cy="10" r="1.6" fill="currentColor"/><path d="M4 18L9.5 13L13 16L16 12.5L20 17" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-  }
-  return '<svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M6 2H14L20 8V20C20 21.1 19.1 22 18 22H6C4.9 22 4 21.1 4 20V4C4 2.9 4.9 2 6 2Z" stroke="currentColor" stroke-width="1.6"/></svg>';
-}
-
-function renderFileList(files) {
+/* ===== نمایش فایل‌ها ===== */
+function renderFiles(files) {
+  const fileList = document.getElementById('fileList');
   if (!files || !files.length) {
     fileList.innerHTML = '<div class="file-empty">فایلی دریافت نشده است.</div>';
     return;
   }
+  
   fileList.innerHTML = files.map(f => `
-    <a class="file-item ${f.status === 'نخوانده' ? 'unread' : ''}" href="${f.url}" target="_blank" rel="noopener">
-      ${f.status === 'نخوانده' ? '<span class="unread-dot"></span>' : ''}
-      <div class="file-icon">${fileTypeIcon(f.fileName)}</div>
+    <a class="file-item ${f.status === 'نخوانده' ? 'unread' : ''}" href="${f.url}" target="_blank">
       <div class="file-item-body">
         <b>${f.fileName}</b>
-        <span>از طرف ${f.senderName} · ${formatFileDate(f.date)}</span>
+        <span>از طرف ${f.senderName}</span>
       </div>
     </a>
   `).join('');
 }
 
-async function loadRecipients() {
-  if (recipientsLoaded) return;
+/* ===== نمایش نرخ‌ها ===== */
+function displayRates(rates) {
+  if (!rates) return;
   
-  // اول از کش بخوان
-  const cachedUsers = cache.get('users_list');
-  if (cachedUsers) {
-    renderRecipients(cachedUsers);
-    recipientsLoaded = true;
+  const formatNumber = (num) => {
+    const parts = String(num).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    return toFaDigits(parts);
+  };
+  
+  if (rates.USD) {
+    document.getElementById('tiUsd').innerHTML = `💵 <span class="rate-label">دلار</span> <span class="rate-value">${formatNumber(rates.USD)}</span>`;
   }
-  
-  try {
-    const data = await sahelApiCall({ action: 'getUsers', userId: sahelUser.id });
-    if (data.success && data.users && data.users.length) {
-      cache.set('users_list', data.users, 60000);
-      renderRecipients(data.users);
-      recipientsLoaded = true;
-    } else if (!recipientsLoaded) {
-      fileRecipient.innerHTML = '<option value="">خطا در دریافت کاربران</option>';
-    }
-  } catch (err) {
-    if (!recipientsLoaded) {
-      fileRecipient.innerHTML = '<option value="">خطا در برقراری ارتباط</option>';
-    }
+  if (rates.AED) {
+    document.getElementById('tiAed').innerHTML = `💴 <span class="rate-label">درهم</span> <span class="rate-value">${formatNumber(rates.AED)}</span>`;
+  }
+  if (rates.COIN) {
+    document.getElementById('tiCoin').innerHTML = `🪙 <span class="rate-label">سکه</span> <span class="rate-value">${formatNumber(rates.COIN)}</span>`;
   }
 }
 
-function renderRecipients(users) {
-  fileRecipient.innerHTML =
-    '<option value="">انتخاب گیرنده...</option>' +
-    users.map(u => `<option value="${u.id}">${u.name}</option>`).join('');
-}
-
-/* باز کردن پنل فایل */
-if (fileTransferBtn && filePanel) {
-  fileTransferBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    const isOpen = filePanel.style.display === 'flex';
-    closeAllPanels();
-    if (!isOpen) {
-      positionPanel(filePanel, fileTransferBtn);
-      filePanel.style.display = 'flex';
-      
-      // لود همزمان
-      Promise.all([
-        loadFileInbox(),
-        loadRecipients()
-      ]);
-      
-      setTimeout(() => {
-        sahelApiCall({ action: 'markFilesRead', userId: sahelUser.id })
-          .then(() => updateFileBadge(0))
-          .catch(() => {});
-      }, 2000);
-    }
-  });
-  filePanel.addEventListener('click', (e) => e.stopPropagation());
-}
-
-/* باز کردن پنل اعضا */
-if (membersSwitchBtn && membersPanel) {
-  membersSwitchBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    const isOpen = membersPanel.style.display === 'flex';
-    closeAllPanels();
-    if (!isOpen) {
-      positionPanel(membersPanel, membersSwitchBtn);
-      membersPanel.style.display = 'flex';
-      
-      // اگر هنوز لود نشده، از سرور بگیر
-      if (!membersLoaded) {
-        loadMembersFromServer();
-      }
-    }
-  });
-  membersPanel.addEventListener('click', (e) => e.stopPropagation());
-}
-
-document.addEventListener('click', closeAllPanels);
-window.addEventListener('resize', closeAllPanels);
-
-/* ===== ارسال فایل ===== */
-if (newFileBtn) {
-  newFileBtn.addEventListener('click', () => {
-    const isOpen = fileSendForm.style.display === 'flex';
-    fileSendForm.style.display = isOpen ? 'none' : 'flex';
-    newFileBtn.classList.toggle('is-open', !isOpen);
-    fileSendStatus.textContent = '';
-  });
-}
-
-const fileUploadLabel = document.getElementById('fileUploadLabel');
-const fileInputLabel = document.getElementById('fileInputLabel');
-const fileChipsList = document.getElementById('fileChipsList');
-
-let selectedFiles = [];
-
-function formatFileSize(bytes) {
-  if (bytes < 1024) return bytes + ' B';
-  if (bytes < 1024 * 1024) return Math.round(bytes / 1024) + ' KB';
-  return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
-}
-
-function renderFileChips() {
-  if (!selectedFiles.length) {
-    fileChipsList.innerHTML = '';
-    fileInputLabel.textContent = 'انتخاب فایل (چند فایل هم‌زمان ممکن است)';
-    fileUploadLabel.classList.remove('has-file');
+/* ===== نمایش مخاطبین چت ===== */
+function renderChatContacts(contacts) {
+  const contactsList = document.getElementById('chatContactsList');
+  if (!contacts || !contacts.length) {
+    contactsList.innerHTML = '<div class="file-empty">کاربری نیست.</div>';
     return;
   }
-  fileUploadLabel.classList.add('has-file');
-  fileInputLabel.textContent = selectedFiles.length === 1
-    ? selectedFiles[0].name
-    : `${selectedFiles.length} فایل انتخاب شد`;
-
-  fileChipsList.innerHTML = selectedFiles.map((f, i) => `
-    <div class="file-chip">
-      <span class="file-chip-name">${f.name}</span>
-      <span class="file-chip-size">${formatFileSize(f.size)}</span>
-      <button type="button" class="file-chip-remove" data-i="${i}" title="انصراف از ارسال این فایل">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
-      </button>
+  
+  contactsList.innerHTML = contacts.map(u => `
+    <div class="chat-contact-row" data-id="${u.id}">
+      <div class="member-avatar">${u.initials || u.name.slice(0, 2)}</div>
+      <div class="member-info">
+        <b>${u.name}</b>
+        <span class="chat-contact-last">کلیک کنید</span>
+      </div>
     </div>
   `).join('');
-
-  fileChipsList.querySelectorAll('.file-chip-remove').forEach(btn => {
-    btn.addEventListener('click', () => {
-      selectedFiles.splice(Number(btn.dataset.i), 1);
-      renderFileChips();
-    });
-  });
 }
 
-if (fileInput) {
-  fileInput.addEventListener('change', () => {
-    const newFiles = Array.from(fileInput.files);
-    newFiles.forEach(nf => {
-      const exists = selectedFiles.some(f => f.name === nf.name && f.size === nf.size);
-      if (!exists) selectedFiles.push(nf);
-    });
-    fileInput.value = '';
-    renderFileChips();
-  });
+/* ===== Event Listeners ===== */
+// باز کردن پنل فایل
+document.getElementById('fileTransferBtn')?.addEventListener('click', (e) => {
+  e.stopPropagation();
+  const panel = document.getElementById('filePanel');
+  panel.style.display = panel.style.display === 'flex' ? 'none' : 'flex';
+  positionPanel(panel, e.currentTarget);
+  if (allData) renderFiles(allData.files);
+});
+
+// باز کردن پنل اعضا
+document.getElementById('membersSwitchBtn')?.addEventListener('click', (e) => {
+  e.stopPropagation();
+  const panel = document.getElementById('membersPanel');
+  panel.style.display = panel.style.display === 'flex' ? 'none' : 'flex';
+  positionPanel(panel, e.currentTarget);
+});
+
+// باز کردن پنل چت
+document.getElementById('chatBtn')?.addEventListener('click', (e) => {
+  e.stopPropagation();
+  const panel = document.getElementById('chatPanel');
+  panel.style.display = panel.style.display === 'flex' ? 'none' : 'flex';
+  positionPanel(panel, e.currentTarget);
+});
+
+// بستن پنل‌ها با کلیک بیرون
+document.addEventListener('click', closeAllPanels);
+
+// شروع
+loadAllData();
+
+// آب و هوا مستقیم
+async function loadWeather() {
+  try {
+    const res = await fetch('https://api.open-meteo.com/v1/forecast?latitude=26.9576&longitude=56.2719&current_weather=true');
+    const data = await res.json();
+    if (data?.current_weather) {
+      const temp = Math.round(data.current_weather.temperature);
+      const code = data.current_weather.weathercode;
+      let desc = code === 0 ? 'آفتابی' : code <= 3 ? 'نیمه ابری' : 'بارانی';
+      document.getElementById('tiWeather').innerHTML = `☀️ ${toFaDigits(temp)}°C ${desc} قشم`;
+    }
+  } catch (e) {}
 }
 
-if (fileSendBtn) {
-  fileSendBtn.addEventListener('click', async () => {
-    const receiverId = fileRecipient.value;
-
-    if (!receiverId) {
-      fileSendStatus.style.color = '#C0472B';
-      fileSendStatus.textContent = 'گیرنده را انتخاب کنید.';
-      return;
-    }
-    if (!selectedFiles.length) {
-      fileSendStatus.style.color = '#C0472B';
-      fileSendStatus.textContent = 'حداقل یک فایل انتخاب کنید.';
-      return;
-    }
-    const tooBig = selectedFiles.find(f => f.size > MAX_FILE_BYTES);
-    if (tooBig) {
-      fileSendStatus.style.color = '#C0472B';
-      fileSendStatus.textContent = `حجم «${tooBig.name}» بیشتر از ۸ مگابایت است.`;
-      return;
-    }
-
-    fileSendBtn.disabled = true;
-
-    const readAsBase64 = (file) => new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result.split(',')[1]);
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
-
-    let sentCount = 0;
-    let failedNames = [];
-
-    for (const file of selectedFiles) {
-      fileSendStatus.style.color = '#7F9A9C';
-      fileSendStatus.textContent = `در حال ارسال ${sentCount + 1} از ${selectedFiles.length}...`;
-      try {
-        const base64 = await readAsBase64(file);
-        const data = await sahelApiCall({
-          action: 'sendFile',
-          senderId: sahelUser.id,
-          receiverId: receiverId,
-          fileName: file.name,
-          mimeType: file.type,
-          fileData: base64
-        });
-        if (data.success) {
-          sentCount++;
-        } else {
-          failedNames.push(file.name);
-        }
-      } catch (err) {
-        failedNames.push(file.name);
-      }
-    }
-
-    fileSendBtn.disabled = false;
-
-    if (!failedNames.length) {
-      fileSendStatus.style.color = '#2FB8A6';
-      fileSendStatus.textContent = sentCount > 1 ? `${toFaDigits(sentCount)} فایل ارسال شد.` : 'فایل ارسال شد.';
-      selectedFiles = [];
-      renderFileChips();
-      // پاک کردن کش فایل‌ها
-      sessionStorage.removeItem('files_' + sahelUser.id);
-      setTimeout(() => {
-        fileSendForm.style.display = 'none';
-        newFileBtn.classList.remove('is-open');
-        fileSendStatus.textContent = '';
-        loadFileInbox();
-      }, 1000);
-    } else {
-      fileSendStatus.style.color = '#C0472B';
-      fileSendStatus.textContent = `ارسال ناموفق: ${failedNames.join('، ')}`;
-      selectedFiles = selectedFiles.filter(f => failedNames.includes(f.name));
-      renderFileChips();
-    }
-  });
-}
-
-/* بارگذاری اولیه badge فایل */
-if (sahelUser) {
-  const cachedFiles = cache.get('files_' + sahelUser.id);
-  if (cachedFiles) {
-    updateFileBadge(cachedFiles.unreadCount);
-  }
-  
-  sahelApiCall({ action: 'getFiles', userId: sahelUser.id })
-    .then(data => { 
-      if (data.success) {
-        cache.set('files_' + sahelUser.id, { files: data.files || [], unreadCount: data.unreadCount || 0 }, 30000);
-        updateFileBadge(data.unreadCount || 0); 
-      }
-    })
-    .catch(() => {});
-}
+loadWeather();
