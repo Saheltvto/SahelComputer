@@ -58,6 +58,9 @@ const membersPanel = document.getElementById('membersPanel');
 const membersList = document.getElementById('membersList');
 let activeMemberId = null;
 
+/* لیست اعضا را نگه می‌داریم تا چت‌باکس هم بتواند برای انتخاب مخاطب از آن استفاده کند */
+window.sahelWorkspaces = [];
+
 function renderMembersPanel(workspaces) {
   if (!workspaces || !workspaces.length) {
     membersList.innerHTML = '<div class="file-empty">کارتابلی ثبت نشده است.</div>';
@@ -108,6 +111,7 @@ async function loadDashboard() {
     try {
       const data = await sahelApiCall({ action: 'dashboard', userId: sahelUser.id });
       if (data.success && data.workspaces && data.workspaces.length) {
+        window.sahelWorkspaces = data.workspaces;
         renderMembersPanel(data.workspaces);
         const own = data.workspaces.find(w => String(w.id) === String(sahelUser.id));
         if (own) {
@@ -126,6 +130,9 @@ async function loadDashboard() {
     membersSwitchBtn.style.display = 'none';
     openWorkspace(sahelUser.appUrl);
   }
+
+  // فهرست کاربران را برای چت‌باکس هم آماده می‌کنیم (حتی برای کاربر عادی)
+  if (window.sahelChatLoadContacts) window.sahelChatLoadContacts();
 }
 
 if (sahelUser) {
@@ -152,6 +159,8 @@ function closeAllPanels() {
   if (userDropdown) userDropdown.style.display = 'none';
   if (filePanel) filePanel.style.display = 'none';
   if (membersPanel) membersPanel.style.display = 'none';
+  const chatPanel = document.getElementById('chatPanel');
+  if (chatPanel) chatPanel.style.display = 'none';
 }
 
 function toFaDigits(n) {
