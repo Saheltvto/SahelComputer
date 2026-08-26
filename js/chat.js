@@ -29,6 +29,14 @@ window.sahelChatLoadContacts = async function() {
     if (data.success && data.users) {
       chatContacts = data.users;
       renderChatContacts();
+      
+      // به‌روزرسانی نشان
+      if (data.unreadCount > 0) {
+        chatBadge.style.display = 'flex';
+        chatBadge.textContent = toFaDigits(data.unreadCount);
+      } else {
+        chatBadge.style.display = 'none';
+      }
     } else {
       chatContactsList.innerHTML = '<div class="file-empty">خطا در بارگذاری کاربران</div>';
     }
@@ -47,13 +55,16 @@ function renderChatContacts() {
   
   chatContactsList.innerHTML = chatContacts.map(u => {
     const initials = u.initials || (u.name ? u.name.slice(0, 2) : '--');
+    const lastMsg = u.lastMessage ? u.lastMessage.substring(0, 30) + (u.lastMessage.length > 30 ? '...' : '') : 'برای شروع گفتگو کلیک کنید';
+    
     return `
       <div class="chat-contact-row" data-id="${u.id}">
         <div class="member-avatar">${initials}</div>
         <div class="member-info">
-          <b>${u.name}</b>
-          <span class="chat-contact-last">برای شروع گفتگو کلیک کنید</span>
+          <b>${u.name}${u.unreadCount > 0 ? ` <span style="background:#2FB8A6;color:#fff;border-radius:10px;padding:2px 8px;font-size:11px;">${toFaDigits(u.unreadCount)}</span>` : ''}</b>
+          <span class="chat-contact-last">${lastMsg}</span>
         </div>
+        ${u.unreadCount > 0 ? '<span class="chat-unread-dot"></span>' : ''}
       </div>
     `;
   }).join('');
