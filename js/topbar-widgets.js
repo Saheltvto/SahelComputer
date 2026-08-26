@@ -34,16 +34,25 @@ async function loadWeather() {
       else if (code <= 67) desc = 'بارانی';
       else if (code <= 77) desc = 'برفی';
       else desc = 'رگباری';
-      tiWeather.textContent = `قشم: ${toFaDigits(temp)}°C ${desc}`;
+      
+      let weatherIcon = '';
+      if (code === 0) weatherIcon = '☀️';
+      else if (code <= 3) weatherIcon = '⛅';
+      else if (code <= 48) weatherIcon = '🌫️';
+      else if (code <= 67) weatherIcon = '🌧️';
+      else if (code <= 77) weatherIcon = '❄️';
+      else weatherIcon = '🌦️';
+      
+      tiWeather.innerHTML = `${weatherIcon} ${toFaDigits(temp)}°C ${desc}`;
     } else {
-      tiWeather.textContent = 'قشم: —';
+      tiWeather.textContent = '—';
     }
   } catch (e) {
-    tiWeather.textContent = 'قشم: —';
+    tiWeather.textContent = '—';
   }
 }
 
-// نرخ ارز و سکه از bonbast.com
+// نرخ ارز و سکه از Apps Script
 async function loadRates() {
   const tiUsd = document.getElementById('tiUsd');
   const tiAed = document.getElementById('tiAed');
@@ -51,51 +60,45 @@ async function loadRates() {
   if (!tiUsd || !tiAed || !tiCoin) return;
   
   try {
-    // استفاده از bonbast.com برای نرخ‌ها
-    const response = await fetch('https://bonbast.com/graph', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: 'param=USD,EUR,AED,COIN'
-    });
-    
-    if (response.ok) {
-      const data = await response.json();
-      
-      // ساختار داده bonbast.com (هر ارز دو مقدار: sell و buy)
-      if (data && data.USD) {
-        const usdSell = data.USD.sell || '—';
-        tiUsd.textContent = `دلار: ${toFaDigits(usdSell)}`;
+    const data = await sahelApiCall({ action: 'getRates' });
+    if (data.success && data.rates) {
+      if (data.rates['USD']) {
+        tiUsd.innerHTML = `💵 ${toFaDigits(data.rates['USD'])}`;
+      } else {
+        tiUsd.textContent = '💵 —';
       }
       
-      if (data && data.AED) {
-        const aedSell = data.AED.sell || '—';
-        tiAed.textContent = `درهم: ${toFaDigits(aedSell)}`;
+      if (data.rates['AED']) {
+        tiAed.innerHTML = `💴 ${toFaDigits(data.rates['AED'])}`;
+      } else {
+        tiAed.textContent = '💴 —';
       }
       
-      if (data && data.COIN) {
-        const coinSell = data.COIN.sell || '—';
-        tiCoin.textContent = `سکه: ${toFaDigits(coinSell)}`;
+      if (data.rates['COIN']) {
+        tiCoin.innerHTML = `🪙 ${toFaDigits(data.rates['COIN'])}`;
+      } else {
+        tiCoin.textContent = '🪙 —';
       }
     } else {
-      // اگر bonbast جواب نداد، مقادیر پیش‌فرض
-      tiUsd.textContent = 'دلار: —';
-      tiAed.textContent = 'درهم: —';
-      tiCoin.textContent = 'سکه: —';
+      tiUsd.textContent = '💵 —';
+      tiAed.textContent = '💴 —';
+      tiCoin.textContent = '🪙 —';
     }
   } catch (e) {
     console.error('Error loading rates:', e);
-    tiUsd.textContent = 'دلار: —';
-    tiAed.textContent = 'درهم: —';
-    tiCoin.textContent = 'سکه: —';
+    tiUsd.textContent = '💵 —';
+    tiAed.textContent = '💴 —';
+    tiCoin.textContent = '🪙 —';
   }
 }
 
 // بارگذاری همه اطلاعات
 function loadTopbarWidgets() {
   const tiDate = document.getElementById('tiDate');
-  if (tiDate) tiDate.textContent = getPersianDate();
+  if (tiDate) {
+    const dateStr = getPersianDate();
+    tiDate.innerHTML = `📅 ${dateStr}`;
+  }
   
   loadWeather();
   loadRates();
