@@ -22,17 +22,18 @@ function getPersianDate() {
   }
 }
 
-// آب و هوا از Apps Script
+// آب و هوا مستقیم از Open-Meteo
 async function loadWeather() {
   const tiWeather = document.getElementById('tiWeather');
   if (!tiWeather) return;
   
   try {
-    const data = await sahelApiCall({ action: 'getWeather' });
+    const res = await fetch('https://api.open-meteo.com/v1/forecast?latitude=26.9576&longitude=56.2719&current_weather=true');
+    const data = await res.json();
     
-    if (data.success && data.weather) {
-      const temp = data.weather.temperature;
-      const code = data.weather.weathercode;
+    if (data && data.current_weather) {
+      const temp = Math.round(data.current_weather.temperature);
+      const code = data.current_weather.weathercode;
       let desc = '';
       let icon = '';
       
