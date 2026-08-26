@@ -1,11 +1,11 @@
-/* ===== نگهبان ورود: اگر کاربر لاگین نکرده، بفرست به صفحه ورود ===== */
+/* ===== نگهبان ورود ===== */
 const sahelUserRaw = sessionStorage.getItem('sahel_user');
 if (!sahelUserRaw) {
   window.location.href = 'login.html';
 }
 const sahelUser = sahelUserRaw ? JSON.parse(sahelUserRaw) : null;
 
-/* ===== ابزار مشترک: موقعیت‌دهی یک پنل ثابت زیر دکمه‌ی محرک آن ===== */
+/* ===== ابزار مشترک ===== */
 function positionPanel(panel, trigger) {
   const rect = trigger.getBoundingClientRect();
   panel.style.top = (rect.bottom + 10) + 'px';
@@ -13,7 +13,25 @@ function positionPanel(panel, trigger) {
   panel.style.left = 'auto';
 }
 
-/* ===== منوی کاربر (باز شدن با کلیک روی نام، بستن با کلیک بیرون) ===== */
+/* ===== کش محلی برای داده‌ها ===== */
+const cache = {
+  set(key, data, ttl = 30000) {
+    const item = { data, expiry: Date.now() + ttl };
+    sessionStorage.setItem(key, JSON.stringify(item));
+  },
+  get(key) {
+    const item = sessionStorage.getItem(key);
+    if (!item) return null;
+    const parsed = JSON.parse(item);
+    if (Date.now() > parsed.expiry) {
+      sessionStorage.removeItem(key);
+      return null;
+    }
+    return parsed.data;
+  }
+};
+
+/* ===== منوی کاربر ===== */
 const topbarUser = document.getElementById('topbarUser');
 const userDropdown = document.getElementById('userDropdown');
 
@@ -52,13 +70,14 @@ function openWorkspace(url) {
   if (workspaceFrame.src !== url) workspaceFrame.src = url;
 }
 
-/* ===== کشوی کارتابل اعضا (فقط مدیر) ===== */
+/* ===== کشوی کارتابل اعضا ===== */
 const membersSwitchBtn = document.getElementById('membersSwitchBtn');
 const membersPanel = document.getElementById('membersPanel');
 const membersList = document.getElementById('membersList');
 let activeMemberId = null;
+let membersLoaded = false;
+let membersLoading = false;
 
-/* لیست اعضا را نگه می‌داریم تا چت‌باکس هم بتواند برای انتخاب مخاطب از آن استفاده کند */
 window.sahelWorkspaces = [];
 
 function renderMembersPanel(workspaces) {
@@ -66,6 +85,7 @@ function renderMembersPanel(workspaces) {
     membersList.innerHTML = '<div class="file-empty">کارتابلی ثبت نشده است.</div>';
     return;
   }
+  
   membersList.innerHTML = workspaces.map(w => `
     <div class="member-row" data-id="${w.id}" data-url="${w.appUrl}">
       <div class="member-avatar">${w.initials || initials(w.name)}</div>
@@ -101,6 +121,7 @@ function initials(name) {
   return parts.length > 1 ? parts[0][0] + parts[1][0] : parts[0].slice(0, 2);
 }
 
+/* ===== بارگذاری داشبورد ===== */
 async function loadDashboard() {
   document.getElementById('topbarName').textContent = sahelUser.name;
   document.getElementById('topbarRole').textContent = sahelUser.role === 'admin' ? 'مدیر سیستم' : 'کاربر';
@@ -108,39 +129,69 @@ async function loadDashboard() {
 
   if (sahelUser.role === 'admin') {
     membersSwitchBtn.style.display = 'flex';
-    try {
-      const data = await sahelApiCall({ action: 'dashboard', userId: sahelUser.id });
-      if (data.success && data.workspaces && data.workspaces.length) {
-        window.sahelWorkspaces = data.workspaces;
-        renderMembersPanel(data.workspaces);
-        const own = data.workspaces.find(w => String(w.id) === String(sahelUser.id));
-        if (own) {
-          setActiveMember(own.id, own.appUrl);
-        } else {
-          // اگر appUrl خود مدیر هنوز در شیت Users پر نشده باشد
-          openWorkspace(sahelUser.appUrl);
-        }
+    
+    // اول از کش بخوان
+    const cachedWorkspaces = cache.get('workspaces');
+    if (cachedWorkspaces) {
+      window.sahelWorkspaces = cachedWorkspaces;
+      renderMembersPanel(cachedWorkspaces);
+      const own = cachedWorkspaces.find(w => String(w.id) === String(sahelUser.id));
+      if (own) {
+        setActiveMember(own.id, own.appUrl);
       } else {
         openWorkspace(sahelUser.appUrl);
       }
-    } catch (err) {
-      openWorkspace(sahelUser.appUrl);
+      membersLoaded = true;
     }
+    
+    // بعد در پس‌زمینه از سرور بگیر
+    loadMembersFromServer();
   } else {
     membersSwitchBtn.style.display = 'none';
     openWorkspace(sahelUser.appUrl);
   }
 
-  // فهرست کاربران را برای چت‌باکس هم آماده می‌کنیم (حتی برای کاربر عادی)
-  if (window.sahelChatLoadContacts) window.sahelChatLoadContacts();
+  // لود چت در پس‌زمینه
+  if (window.sahelChatLoadContacts) {
+    setTimeout(() => window.sahelChatLoadContacts(), 500);
+  }
+}
+
+async function loadMembersFromServer() {
+  if (membersLoading) return;
+  membersLoading = true;
+  
+  try {
+    const data = await sahelApiCall({ action: 'dashboard', userId: sahelUser.id });
+    if (data.success && data.workspaces && data.workspaces.length) {
+      window.sahelWorkspaces = data.workspaces;
+      cache.set('workspaces', data.workspaces, 60000); // کش ۱ دقیقه
+      renderMembersPanel(data.workspaces);
+      membersLoaded = true;
+      
+      const own = data.workspaces.find(w => String(w.id) === String(sahelUser.id));
+      if (own && !activeMemberId) {
+        setActiveMember(own.id, own.appUrl);
+      } else if (!activeMemberId) {
+        openWorkspace(sahelUser.appUrl);
+      }
+    }
+  } catch (err) {
+    console.error('Error loading members:', err);
+    if (!membersLoaded) {
+      membersList.innerHTML = '<div class="file-empty">خطا در بارگذاری — دوباره تلاش کنید</div>';
+    }
+  } finally {
+    membersLoading = false;
+  }
 }
 
 if (sahelUser) {
   loadDashboard();
 }
 
-/* ===== صندوق ارسال/دریافت فایل ===== */
-const MAX_FILE_BYTES = 8 * 1024 * 1024; // ۸ مگابایت
+/* ===== صندوق فایل ===== */
+const MAX_FILE_BYTES = 8 * 1024 * 1024;
 
 const fileTransferBtn = document.getElementById('fileTransferBtn');
 const filePanel = document.getElementById('filePanel');
@@ -154,6 +205,8 @@ const fileSendStatus = document.getElementById('fileSendStatus');
 const fileList = document.getElementById('fileList');
 
 let recipientsLoaded = false;
+let filesLoaded = false;
+let filesLoading = false;
 
 function closeAllPanels() {
   if (userDropdown) userDropdown.style.display = 'none';
@@ -177,16 +230,34 @@ function formatFileDate(d) {
 }
 
 async function loadFileInbox() {
+  if (filesLoading) return;
+  filesLoading = true;
+  
+  // اول از کش بخوان
+  const cachedFiles = cache.get('files_' + sahelUser.id);
+  if (cachedFiles) {
+    renderFileList(cachedFiles.files);
+    updateFileBadge(cachedFiles.unreadCount);
+  }
+  
   try {
     const data = await sahelApiCall({ action: 'getFiles', userId: sahelUser.id });
-    if (!data.success) {
-      fileList.innerHTML = '<div class="file-empty">' + (data.message || 'خطا در دریافت فایل‌ها.') + '</div>';
-      return;
+    if (data.success) {
+      cache.set('files_' + sahelUser.id, { files: data.files || [], unreadCount: data.unreadCount || 0 }, 30000);
+      updateFileBadge(data.unreadCount || 0);
+      renderFileList(data.files || []);
+      filesLoaded = true;
+    } else {
+      if (!filesLoaded) {
+        fileList.innerHTML = '<div class="file-empty">' + (data.message || 'خطا در دریافت فایل‌ها.') + '</div>';
+      }
     }
-    updateFileBadge(data.unreadCount || 0);
-    renderFileList(data.files || []);
   } catch (err) {
-    fileList.innerHTML = '<div class="file-empty">خطا در برقراری ارتباط با سرور.</div>';
+    if (!filesLoaded) {
+      fileList.innerHTML = '<div class="file-empty">خطا در برقراری ارتباط با سرور.</div>';
+    }
+  } finally {
+    filesLoading = false;
   }
 }
 
@@ -214,7 +285,7 @@ function fileTypeIcon(fileName) {
 }
 
 function renderFileList(files) {
-  if (!files.length) {
+  if (!files || !files.length) {
     fileList.innerHTML = '<div class="file-empty">فایلی دریافت نشده است.</div>';
     return;
   }
@@ -232,24 +303,37 @@ function renderFileList(files) {
 
 async function loadRecipients() {
   if (recipientsLoaded) return;
-  fileRecipient.innerHTML = '<option value="">در حال بارگذاری کاربران...</option>';
+  
+  // اول از کش بخوان
+  const cachedUsers = cache.get('users_list');
+  if (cachedUsers) {
+    renderRecipients(cachedUsers);
+    recipientsLoaded = true;
+  }
+  
   try {
     const data = await sahelApiCall({ action: 'getUsers', userId: sahelUser.id });
     if (data.success && data.users && data.users.length) {
-      fileRecipient.innerHTML =
-        '<option value="">انتخاب گیرنده...</option>' +
-        data.users.map(u => `<option value="${u.id}">${u.name}</option>`).join('');
+      cache.set('users_list', data.users, 60000);
+      renderRecipients(data.users);
       recipientsLoaded = true;
-    } else {
-      // اگر success=false برگشت یعنی سرور اکشن getUsers را نمی‌شناسد —
-      // معمولاً چون Apps Script بعد از تغییر کد، دوباره Deploy نشده است.
-      fileRecipient.innerHTML = '<option value="">' + (data.message || 'خطا در دریافت کاربران — Apps Script را دوباره Deploy کنید') + '</option>';
+    } else if (!recipientsLoaded) {
+      fileRecipient.innerHTML = '<option value="">خطا در دریافت کاربران</option>';
     }
   } catch (err) {
-    fileRecipient.innerHTML = '<option value="">خطا در برقراری ارتباط با سرور</option>';
+    if (!recipientsLoaded) {
+      fileRecipient.innerHTML = '<option value="">خطا در برقراری ارتباط</option>';
+    }
   }
 }
 
+function renderRecipients(users) {
+  fileRecipient.innerHTML =
+    '<option value="">انتخاب گیرنده...</option>' +
+    users.map(u => `<option value="${u.id}">${u.name}</option>`).join('');
+}
+
+/* باز کردن پنل فایل */
 if (fileTransferBtn && filePanel) {
   fileTransferBtn.addEventListener('click', (e) => {
     e.stopPropagation();
@@ -258,19 +342,24 @@ if (fileTransferBtn && filePanel) {
     if (!isOpen) {
       positionPanel(filePanel, fileTransferBtn);
       filePanel.style.display = 'flex';
-      loadFileInbox();
-      loadRecipients();
-      // فایل‌های نخوانده را با کمی تأخیر علامت خوانده‌شده بزن تا کاربر لیست را ببیند
+      
+      // لود همزمان
+      Promise.all([
+        loadFileInbox(),
+        loadRecipients()
+      ]);
+      
       setTimeout(() => {
         sahelApiCall({ action: 'markFilesRead', userId: sahelUser.id })
           .then(() => updateFileBadge(0))
           .catch(() => {});
-      }, 1500);
+      }, 2000);
     }
   });
   filePanel.addEventListener('click', (e) => e.stopPropagation());
 }
 
+/* باز کردن پنل اعضا */
 if (membersSwitchBtn && membersPanel) {
   membersSwitchBtn.addEventListener('click', (e) => {
     e.stopPropagation();
@@ -279,6 +368,11 @@ if (membersSwitchBtn && membersPanel) {
     if (!isOpen) {
       positionPanel(membersPanel, membersSwitchBtn);
       membersPanel.style.display = 'flex';
+      
+      // اگر هنوز لود نشده، از سرور بگیر
+      if (!membersLoaded) {
+        loadMembersFromServer();
+      }
     }
   });
   membersPanel.addEventListener('click', (e) => e.stopPropagation());
@@ -287,6 +381,7 @@ if (membersSwitchBtn && membersPanel) {
 document.addEventListener('click', closeAllPanels);
 window.addEventListener('resize', closeAllPanels);
 
+/* ===== ارسال فایل ===== */
 if (newFileBtn) {
   newFileBtn.addEventListener('click', () => {
     const isOpen = fileSendForm.style.display === 'flex';
@@ -300,7 +395,7 @@ const fileUploadLabel = document.getElementById('fileUploadLabel');
 const fileInputLabel = document.getElementById('fileInputLabel');
 const fileChipsList = document.getElementById('fileChipsList');
 
-let selectedFiles = []; // آرایه‌ی خودمان از فایل‌های انتخاب‌شده (چون FileList غیرقابل‌ویرایش است)
+let selectedFiles = [];
 
 function formatFileSize(bytes) {
   if (bytes < 1024) return bytes + ' B';
@@ -341,12 +436,11 @@ function renderFileChips() {
 if (fileInput) {
   fileInput.addEventListener('change', () => {
     const newFiles = Array.from(fileInput.files);
-    // جلوگیری از افزودن فایل تکراری (بر اساس نام و حجم)
     newFiles.forEach(nf => {
       const exists = selectedFiles.some(f => f.name === nf.name && f.size === nf.size);
       if (!exists) selectedFiles.push(nf);
     });
-    fileInput.value = ''; // امکان انتخاب دوباره‌ی همون فایل در آینده
+    fileInput.value = '';
     renderFileChips();
   });
 }
@@ -414,24 +508,36 @@ if (fileSendBtn) {
       fileSendStatus.textContent = sentCount > 1 ? `${toFaDigits(sentCount)} فایل ارسال شد.` : 'فایل ارسال شد.';
       selectedFiles = [];
       renderFileChips();
+      // پاک کردن کش فایل‌ها
+      sessionStorage.removeItem('files_' + sahelUser.id);
       setTimeout(() => {
         fileSendForm.style.display = 'none';
         newFileBtn.classList.remove('is-open');
         fileSendStatus.textContent = '';
-      }, 1400);
+        loadFileInbox();
+      }, 1000);
     } else {
       fileSendStatus.style.color = '#C0472B';
       fileSendStatus.textContent = `ارسال ناموفق: ${failedNames.join('، ')}`;
-      // فایل‌های موفق را از لیست حذف کن، فقط ناموفق‌ها بمونن برای تلاش دوباره
       selectedFiles = selectedFiles.filter(f => failedNames.includes(f.name));
       renderFileChips();
     }
   });
 }
 
-/* بارگذاری اولیه‌ی تعداد فایل‌های نخوانده برای نمایش روی زنگوله (بدون باز کردن پنل) */
+/* بارگذاری اولیه badge فایل */
 if (sahelUser) {
+  const cachedFiles = cache.get('files_' + sahelUser.id);
+  if (cachedFiles) {
+    updateFileBadge(cachedFiles.unreadCount);
+  }
+  
   sahelApiCall({ action: 'getFiles', userId: sahelUser.id })
-    .then(data => { if (data.success) updateFileBadge(data.unreadCount || 0); })
+    .then(data => { 
+      if (data.success) {
+        cache.set('files_' + sahelUser.id, { files: data.files || [], unreadCount: data.unreadCount || 0 }, 30000);
+        updateFileBadge(data.unreadCount || 0); 
+      }
+    })
     .catch(() => {});
 }
