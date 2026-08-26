@@ -43,7 +43,7 @@ async function loadWeather() {
   }
 }
 
-// نرخ ارز و سکه
+// نرخ ارز و سکه از bonbast.com
 async function loadRates() {
   const tiUsd = document.getElementById('tiUsd');
   const tiAed = document.getElementById('tiAed');
@@ -51,31 +51,43 @@ async function loadRates() {
   if (!tiUsd || !tiAed || !tiCoin) return;
   
   try {
-    // استفاده از API رایگان - می‌توانید آدرس را تغییر دهید
-    const res = await fetch('https://api.exchangerate-api.com/v4/latest/USD');
-    const data = await res.json();
+    // استفاده از bonbast.com برای نرخ‌ها
+    const response = await fetch('https://bonbast.com/graph', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: 'param=USD,EUR,AED,COIN'
+    });
     
-    if (data && data.rates) {
-      const usdRate = Math.round((1 / data.rates.IRR) * 1000000); // تبدیل به تومان
-      const aedRate = Math.round((data.rates.AED / data.rates.IRR) * 1000000);
+    if (response.ok) {
+      const data = await response.json();
       
-      tiUsd.textContent = `دلار: ${toFaDigits(usdRate)}`;
-      tiAed.textContent = `درهم: ${toFaDigits(aedRate)}`;
+      // ساختار داده bonbast.com (هر ارز دو مقدار: sell و buy)
+      if (data && data.USD) {
+        const usdSell = data.USD.sell || '—';
+        tiUsd.textContent = `دلار: ${toFaDigits(usdSell)}`;
+      }
+      
+      if (data && data.AED) {
+        const aedSell = data.AED.sell || '—';
+        tiAed.textContent = `درهم: ${toFaDigits(aedSell)}`;
+      }
+      
+      if (data && data.COIN) {
+        const coinSell = data.COIN.sell || '—';
+        tiCoin.textContent = `سکه: ${toFaDigits(coinSell)}`;
+      }
+    } else {
+      // اگر bonbast جواب نداد، مقادیر پیش‌فرض
+      tiUsd.textContent = 'دلار: —';
+      tiAed.textContent = 'درهم: —';
+      tiCoin.textContent = 'سکه: —';
     }
   } catch (e) {
+    console.error('Error loading rates:', e);
     tiUsd.textContent = 'دلار: —';
     tiAed.textContent = 'درهم: —';
-  }
-  
-  // سکه - نیاز به API جداگانه
-  try {
-    // این API ممکن است کار نکند - باید یک API معتبر پیدا کنید
-    const res = await fetch('https://api.iraneconomics.com/coin');
-    const data = await res.json();
-    if (data && data.price) {
-      tiCoin.textContent = `سکه: ${toFaDigits(data.price)}`;
-    }
-  } catch (e) {
     tiCoin.textContent = 'سکه: —';
   }
 }
