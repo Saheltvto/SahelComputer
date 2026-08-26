@@ -15,38 +15,72 @@ const chatPanelTitle = document.getElementById('chatPanelTitle');
 let activeChatContact = null;
 let chatContacts = [];
 let chatMessagesData = {};
+let contactsLoaded = false;
+let contactsLoading = false;
 
-// تابع کمکی برای تبدیل اعداد به فارسی
 function toFaDigits(n) {
   const fa = ['۰','۱','۲','۳','۴','۵','۶','۷','۸','۹'];
   return String(n).replace(/[0-9]/g, d => fa[d]);
 }
 
-// بارگذاری مخاطبین چت
-window.sahelChatLoadContacts = async function() {
+/* کش محلی */
+const chatCache = {
+  set(key, data, ttl = 15000) {
+    const item = { data, expiry: Date.now() + ttl };
+    sessionStorage.setItem('chat_' + key, JSON.stringify(item));
+  },
+  get(key) {
+    const item = sessionStorage.getItem('chat_' + key);
+    if (!item) return null;
+    const parsed = JSON.parse(item);
+    if (Date.now() > parsed.expiry) {
+      sessionStorage.removeItem('chat_' + key);
+      return null;
+    }
+    return parsed.data;
+  }
+};
+
+/* بارگذاری مخاطبین */
+window.sahelChatLoadContacts = async function(force = false) {
+  if (contactsLoading) return;
+  
+  // اول از کش
+  if (!force) {
+    const cached = chatCache.get('contacts_' + sahelUser.id);
+    if (cached) {
+      chatContacts = cached.users;
+      renderChatContacts();
+      updateChatBadge(cached.unreadCount);
+      contactsLoaded = true;
+    }
+  }
+  
+  contactsLoading = true;
   try {
     const data = await sahelApiCall({ action: 'getChatContacts', userId: sahelUser.id });
     if (data.success && data.users) {
       chatContacts = data.users;
+      chatCache.set('contacts_' + sahelUser.id, { users: data.users, unreadCount: data.unreadCount || 0 }, 15000);
       renderChatContacts();
-      
-      // به‌روزرسانی نشان
-      if (data.unreadCount > 0) {
-        chatBadge.style.display = 'flex';
-        chatBadge.textContent = toFaDigits(data.unreadCount);
-      } else {
-        chatBadge.style.display = 'none';
-      }
+      updateChatBadge(data.unreadCount || 0);
+      contactsLoaded = true;
     } else {
-      chatContactsList.innerHTML = '<div class="file-empty">خطا در بارگذاری کاربران</div>';
+      if (!contactsLoaded) {
+        chatContactsList.innerHTML = '<div class="file-empty">خطا در بارگذاری کاربران</div>';
+      }
     }
   } catch (e) {
     console.error('Error loading chat contacts:', e);
-    chatContactsList.innerHTML = '<div class="file-empty">خطا در بارگذاری کاربران</div>';
+    if (!contactsLoaded) {
+      chatContactsList.innerHTML = '<div class="file-empty">خطا در بارگذاری کاربران</div>';
+    }
+  } finally {
+    contactsLoading = false;
   }
 };
 
-// نمایش مخاطبین
+/* نمایش مخاطبین */
 function renderChatContacts() {
   if (!chatContacts.length) {
     chatContactsList.innerHTML = '<div class="file-empty">کاربری برای گفتگو نیست.</div>';
@@ -80,7 +114,7 @@ function renderChatContacts() {
   });
 }
 
-// باز کردن گفتگو با یک مخاطب
+/* باز کردن گفتگو */
 function openChatThread(contact) {
   activeChatContact = contact;
   chatPanelTitle.textContent = contact.name;
@@ -88,10 +122,17 @@ function openChatThread(contact) {
   chatThreadView.style.display = 'flex';
   chatBackBtn.style.display = 'flex';
   
+  // اول از کش
+  const cachedMessages = chatCache.get('messages_' + contact.id);
+  if (cachedMessages) {
+    chatMessagesData[contact.id] = cachedMessages;
+    renderChatMessages(contact.id);
+  }
+  
   loadChatMessages(contact.id);
 }
 
-// بارگذاری پیام‌ها
+/* بارگذاری پیام‌ها */
 async function loadChatMessages(contactId) {
   try {
     const data = await sahelApiCall({ 
@@ -102,24 +143,28 @@ async function loadChatMessages(contactId) {
     
     if (data.success) {
       chatMessagesData[contactId] = data.messages || [];
+      chatCache.set('messages_' + contactId, data.messages || [], 10000);
       renderChatMessages(contactId);
       
-      // علامت‌گذاری پیام‌های خوانده شده
       sahelApiCall({
         action: 'markChatRead',
         userId: sahelUser.id,
         contactId: contactId
       }).catch(() => {});
     } else {
-      chatMessages.innerHTML = '<div style="text-align:center;color:#7F9A9C;padding:20px;">' + (data.message || 'خطا در بارگذاری پیام‌ها') + '</div>';
+      if (!chatMessagesData[contactId]) {
+        chatMessages.innerHTML = '<div style="text-align:center;color:#7F9A9C;padding:20px;">' + (data.message || 'خطا در بارگذاری پیام‌ها') + '</div>';
+      }
     }
   } catch (e) {
     console.error('Error loading chat messages:', e);
-    chatMessages.innerHTML = '<div style="text-align:center;color:#7F9A9C;padding:20px;">خطا در بارگذاری پیام‌ها</div>';
+    if (!chatMessagesData[contactId]) {
+      chatMessages.innerHTML = '<div style="text-align:center;color:#7F9A9C;padding:20px;">خطا در بارگذاری پیام‌ها</div>';
+    }
   }
 }
 
-// نمایش پیام‌ها
+/* نمایش پیام‌ها */
 function renderChatMessages(contactId) {
   const messages = chatMessagesData[contactId] || [];
   
@@ -144,7 +189,6 @@ function renderChatMessages(contactId) {
   chatMessages.scrollTop = chatMessages.scrollHeight;
 }
 
-// فرمت زمان
 function formatChatTime(time) {
   try {
     return new Date(time).toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' });
@@ -153,10 +197,12 @@ function formatChatTime(time) {
   }
 }
 
-// ارسال پیام
+/* ارسال پیام */
 async function sendChatMessage() {
   const text = chatInput.value.trim();
   if (!text || !activeChatContact) return;
+  
+  chatSendBtn.disabled = true;
   
   try {
     const data = await sahelApiCall({
@@ -168,6 +214,8 @@ async function sendChatMessage() {
     
     if (data.success) {
       chatInput.value = '';
+      // پاک کردن کش پیام‌ها
+      sessionStorage.removeItem('chat_messages_' + activeChatContact.id);
       await loadChatMessages(activeChatContact.id);
     } else {
       alert(data.message || 'خطا در ارسال پیام');
@@ -175,10 +223,11 @@ async function sendChatMessage() {
   } catch (e) {
     console.error('Error sending message:', e);
     alert('خطا در ارسال پیام');
+  } finally {
+    chatSendBtn.disabled = false;
   }
 }
 
-// بازگشت به لیست مخاطبین
 function backToContacts() {
   chatThreadView.style.display = 'none';
   chatContactsView.style.display = 'flex';
@@ -187,7 +236,16 @@ function backToContacts() {
   activeChatContact = null;
 }
 
-// Event Listeners
+function updateChatBadge(count) {
+  if (count > 0) {
+    chatBadge.style.display = 'flex';
+    chatBadge.textContent = toFaDigits(count);
+  } else {
+    chatBadge.style.display = 'none';
+  }
+}
+
+/* Event Listeners */
 if (chatBtn && chatPanel) {
   chatBtn.addEventListener('click', (e) => {
     e.stopPropagation();
@@ -197,7 +255,6 @@ if (chatBtn && chatPanel) {
       positionPanel(chatPanel, chatBtn);
       chatPanel.style.display = 'flex';
       
-      // نمایش لیست مخاطبین و بارگذاری مجدد
       chatContactsView.style.display = 'flex';
       chatThreadView.style.display = 'none';
       chatBackBtn.style.display = 'none';
@@ -227,7 +284,7 @@ if (chatInput) {
   });
 }
 
-// بارگذاری اولیه مخاطبین
+/* بارگذاری اولیه */
 if (sahelUser) {
   setTimeout(() => {
     if (window.sahelChatLoadContacts) {
@@ -235,3 +292,10 @@ if (sahelUser) {
     }
   }, 1000);
 }
+
+/* به‌روزرسانی دوره‌ای مخاطبین (هر ۳۰ ثانیه) */
+setInterval(() => {
+  if (sahelUser && document.visibilityState === 'visible') {
+    window.sahelChatLoadContacts(true);
+  }
+}, 30000);
