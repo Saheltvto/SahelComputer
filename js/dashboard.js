@@ -50,6 +50,48 @@ function openWorkspace(url) {
   if (workspaceFrame.src !== url) workspaceFrame.src = url;
 }
 
+/* ===== بج‌های اعلان ===== */
+function updateFileBadge(count) {
+  const badge = document.getElementById('fileBadge');
+  if (count > 0) {
+    badge.style.display = 'flex';
+    badge.textContent = toFaDigits(count);
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
+function updateChatBadge(count) {
+  const badge = document.getElementById('chatBadge');
+  if (count > 0) {
+    badge.style.display = 'flex';
+    badge.textContent = toFaDigits(count);
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
+/* ===== بارگذاری فایل‌ها و چت (قابل استفاده مجدد در start و باز شدن پنل‌ها) ===== */
+async function loadFiles() {
+  try {
+    const fileData = await sahelApiCall({ action: 'getFiles', userId: sahelUser.id });
+    if (fileData.success) {
+      renderFiles(fileData.files);
+      updateFileBadge(fileData.unreadCount);
+    }
+  } catch (e) {}
+}
+
+async function loadChatContacts() {
+  try {
+    const chatData = await sahelApiCall({ action: 'getChatContacts', userId: sahelUser.id });
+    if (chatData.success) {
+      renderChatContacts(chatData.users);
+      updateChatBadge(chatData.unreadCount);
+    }
+  } catch (e) {}
+}
+
 /* ===== شروع ===== */
 async function start() {
   document.getElementById('topbarName').textContent = sahelUser.name;
@@ -87,29 +129,9 @@ async function start() {
     if (userData.success) renderRecipients(userData.users);
   } catch (e) {}
 
-  // لود فایل‌ها
-  try {
-    const fileData = await sahelApiCall({ action: 'getFiles', userId: sahelUser.id });
-    if (fileData.success) {
-      renderFiles(fileData.files);
-      if (fileData.unreadCount > 0) {
-        document.getElementById('fileBadge').style.display = 'flex';
-        document.getElementById('fileBadge').textContent = toFaDigits(fileData.unreadCount);
-      }
-    }
-  } catch (e) {}
-
-  // لود مخاطبین چت
-  try {
-    const chatData = await sahelApiCall({ action: 'getChatContacts', userId: sahelUser.id });
-    if (chatData.success) {
-      renderChatContacts(chatData.users);
-      if (chatData.unreadCount > 0) {
-        document.getElementById('chatBadge').style.display = 'flex';
-        document.getElementById('chatBadge').textContent = toFaDigits(chatData.unreadCount);
-      }
-    }
-  } catch (e) {}
+  // لود فایل‌ها و مخاطبین چت (با بج‌های واقعی)
+  await loadFiles();
+  await loadChatContacts();
 }
 
 /* ===== نمایش اعضا و مدیریت فعال ===== */
@@ -224,6 +246,11 @@ function openChatWith(contactId, contactName) {
   document.getElementById('chatThreadView').style.display = 'flex';
   document.getElementById('chatBackBtn').style.display = 'flex';
   loadChatMessages(contactId);
+
+  // علامت‌گذاری پیام‌های این مخاطب به‌عنوان خوانده‌شده و به‌روزرسانی بج
+  sahelApiCall({ action: 'markChatRead', userId: sahelUser.id, contactId: contactId })
+    .then(() => loadChatContacts())
+    .catch(() => {});
 }
 
 async function loadChatMessages(contactId) {
@@ -260,29 +287,6 @@ function renderChatMessages(messages, contactId) {
   chatMessages.scrollTop = chatMessages.scrollHeight;
   chatMessages.dataset.contactId = contactId;
 }
-
-/* ===== ارسال پیام ===== */
-document.getElementById('chatSendBtn')?.addEventListener('click', async () => {
-  const input = document.getElementById('chatInput');
-  const chatMessages = document.getElementById('chatMessages');
-  const text = input.value.trim();
-  const contactId = chatMessages.dataset.contactId;
-  if (!text || !contactId) return;
-  try {
-    const data = await sahelApiCall({ action: 'sendChatMessage', senderId: sahelUser.id, receiverId: contactId, text: text });
-    if (data.success) {
-      input.value = '';
-      loadChatMessages(contactId);
-    }
-  } catch (e) {}
-});
-
-document.getElementById('chatInput')?.addEventListener('keypress', (e) => {
-  if (e.key === 'Enter' && !e.shiftKey) {
-    e.preventDefault();
-    document.getElementById('chatSendBtn').click();
-  }
-});
 
 document.getElementById('chatBackBtn')?.addEventListener('click', () => {
   document.getElementById('chatThreadView').style.display = 'none';
@@ -392,7 +396,7 @@ fileSendBtn?.addEventListener('click', async () => {
 });
 
 /* ===== Event Listeners ===== */
-document.getElementById('fileTransferBtn')?.addEventListener('click', (e) => {
+document.getElementById('fileTransferBtn')?.addEventListener('click', async (e) => {
   e.stopPropagation();
   const panel = document.getElementById('filePanel');
   const isOpen = panel.style.display === 'flex';
@@ -400,9 +404,17 @@ document.getElementById('fileTransferBtn')?.addEventListener('click', (e) => {
   if (!isOpen) {
     positionPanel(panel, e.currentTarget);
     panel.style.display = 'flex';
-    sahelApiCall({ action: 'getFiles', userId: sahelUser.id }).then(data => {
-      if (data.success) renderFiles(data.files);
-    }).catch(() => {});
+    try {
+      const data = await sahelApiCall({ action: 'getFiles', userId: sahelUser.id });
+      if (data.success) {
+        renderFiles(data.files);
+        // چون کاربر همین الان فایل‌ها را می‌بیند، به‌عنوان خوانده‌شده علامت بزن و بج را پاک کن
+        if (data.unreadCount > 0) {
+          updateFileBadge(0);
+          sahelApiCall({ action: 'markFilesRead', userId: sahelUser.id }).catch(() => {});
+        }
+      }
+    } catch (err) {}
   }
 });
 
@@ -437,6 +449,7 @@ document.getElementById('chatBtn')?.addEventListener('click', (e) => {
     document.getElementById('chatThreadView').style.display = 'none';
     document.getElementById('chatBackBtn').style.display = 'none';
     document.getElementById('chatPanelTitle').textContent = 'گفتگوها';
+    loadChatContacts();
   }
 });
 
@@ -462,33 +475,5 @@ document.getElementById('logoutBtn')?.addEventListener('click', () => {
 document.addEventListener('click', closeAllPanels);
 window.addEventListener('resize', closeAllPanels);
 
-/* ===== تاریخ شمسی ===== */
-function loadDate() {
-  try {
-    const now = new Date();
-    const dateStr = new Intl.DateTimeFormat('fa-IR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' }).format(now);
-    document.getElementById('tiDate').innerHTML = `📅 <span class="date-value">${dateStr}</span>`;
-  } catch (e) {}
-}
-
-/* ===== آب و هوا ===== */
-async function loadWeather() {
-  try {
-    const res = await fetch('https://api.open-meteo.com/v1/forecast?latitude=26.9576&longitude=56.2719&current_weather=true');
-    const data = await res.json();
-    if (data?.current_weather) {
-      const temp = Math.round(data.current_weather.temperature);
-      const code = data.current_weather.weathercode;
-      let icon = '☀️', desc = 'آفتابی';
-      if (code <= 3) { icon = '⛅'; desc = 'نیمه ابری'; }
-      else if (code <= 48) { icon = '🌫️'; desc = 'مه‌آلود'; }
-      else if (code <= 67) { icon = '🌧️'; desc = 'بارانی'; }
-      document.getElementById('tiWeather').innerHTML = `${icon} <span class="weather-temp">${toFaDigits(temp)}°C</span> <span class="weather-desc">${desc}</span> <span class="weather-city">قشم</span>`;
-    }
-  } catch (e) {}
-}
-
 /* ===== شروع ===== */
-loadDate();
-loadWeather();
 start();
