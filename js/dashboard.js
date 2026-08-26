@@ -106,7 +106,8 @@ async function start() {
       renderMembers(dashData.workspaces);
       const own = dashData.workspaces.find(w => String(w.id) === String(sahelUser.id));
       if (own) {
-        setActiveMember(own);
+        // شیء own پراپرتی appUrl دارد، ولی setActiveMember انتظار url دارد — نگاشت درست انجام شود
+        setActiveMember({ id: own.id, name: own.name, url: own.appUrl });
       } else {
         openWorkspace(sahelUser.appUrl);
       }
