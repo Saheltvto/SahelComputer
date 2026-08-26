@@ -21,9 +21,8 @@ window.sahelChatLoadContacts = async function() {
   try {
     const data = await sahelApiCall({ action: 'getChatContacts', userId: sahelUser.id });
     if (data.success && data.users) {
-      chatContacts = data.users.filter(u => String(u.id) !== String(sahelUser.id));
+      chatContacts = data.users;
       renderChatContacts();
-      updateChatBadge(data.unreadCount || 0);
     }
   } catch (e) {
     console.error('Error loading chat contacts:', e);
@@ -42,9 +41,8 @@ function renderChatContacts() {
       <div class="member-avatar">${u.initials || u.name.slice(0, 2)}</div>
       <div class="member-info">
         <b>${u.name}</b>
-        <span class="chat-contact-last">${u.lastMessage || 'شروع گفتگو'}</span>
+        <span class="chat-contact-last">برای شروع گفتگو کلیک کنید</span>
       </div>
-      ${u.unreadCount > 0 ? '<span class="chat-unread-dot"></span>' : ''}
     </div>
   `).join('');
   
@@ -96,7 +94,7 @@ function renderChatMessages(contactId) {
   }
   
   chatMessages.innerHTML = messages.map(msg => `
-    <div class="chat-bubble ${msg.senderId === sahelUser.id ? 'chat-bubble-out' : 'chat-bubble-in'}">
+    <div class="chat-bubble ${String(msg.senderId) === String(sahelUser.id) ? 'chat-bubble-out' : 'chat-bubble-in'}">
       ${msg.text.replace(/https?:\/\/[^\s]+/g, url => `<a href="${url}" target="_blank">${url}</a>`)}
       <span class="chat-bubble-time">${formatChatTime(msg.time)}</span>
     </div>
@@ -133,16 +131,6 @@ async function sendChatMessage() {
     }
   } catch (e) {
     console.error('Error sending message:', e);
-  }
-}
-
-// به‌روزرسانی نشان تعداد پیام‌های نخوانده
-function updateChatBadge(count) {
-  if (count > 0) {
-    chatBadge.style.display = 'flex';
-    chatBadge.textContent = toFaDigits(count);
-  } else {
-    chatBadge.style.display = 'none';
   }
 }
 
@@ -189,6 +177,6 @@ if (chatInput) {
 }
 
 // بارگذاری اولیه مخاطبین
-if (sahelUser && window.sahelChatLoadContacts) {
+if (sahelUser) {
   setTimeout(() => window.sahelChatLoadContacts(), 1000);
 }
