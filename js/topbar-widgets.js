@@ -28,22 +28,16 @@ async function loadWeather() {
       const temp = Math.round(data.current_weather.temperature);
       const code = data.current_weather.weathercode;
       let desc = '';
-      if (code === 0) desc = 'آفتابی';
-      else if (code <= 3) desc = 'نیمه ابری';
-      else if (code <= 48) desc = 'مه‌آلود';
-      else if (code <= 67) desc = 'بارانی';
-      else if (code <= 77) desc = 'برفی';
-      else desc = 'رگباری';
+      let icon = '';
       
-      let weatherIcon = '';
-      if (code === 0) weatherIcon = '☀️';
-      else if (code <= 3) weatherIcon = '⛅';
-      else if (code <= 48) weatherIcon = '🌫️';
-      else if (code <= 67) weatherIcon = '🌧️';
-      else if (code <= 77) weatherIcon = '❄️';
-      else weatherIcon = '🌦️';
+      if (code === 0) { desc = 'آفتابی'; icon = '☀️'; }
+      else if (code <= 3) { desc = 'نیمه ابری'; icon = '⛅'; }
+      else if (code <= 48) { desc = 'مه‌آلود'; icon = '🌫️'; }
+      else if (code <= 67) { desc = 'بارانی'; icon = '🌧️'; }
+      else if (code <= 77) { desc = 'برفی'; icon = '❄️'; }
+      else { desc = 'رگباری'; icon = '🌦️'; }
       
-      tiWeather.innerHTML = `${weatherIcon} ${toFaDigits(temp)}°C ${desc}`;
+      tiWeather.innerHTML = `${icon} ${toFaDigits(temp)}°C ${desc}`;
     } else {
       tiWeather.textContent = '—';
     }
@@ -52,12 +46,86 @@ async function loadWeather() {
   }
 }
 
-// نرخ ارز و سکه از Apps Script
+// نرخ ارز و سکه از API آنلاین
 async function loadRates() {
   const tiUsd = document.getElementById('tiUsd');
   const tiAed = document.getElementById('tiAed');
   const tiCoin = document.getElementById('tiCoin');
   if (!tiUsd || !tiAed || !tiCoin) return;
+  
+  // روش ۱: استفاده از API نوسان (navasan.tech)
+  try {
+    const response = await fetch('https://api.navasan.tech/latest/?api_key=free');
+    const data = await response.json();
+    
+    if (data && data.usd && data.usd.value) {
+      tiUsd.innerHTML = `💵 ${toFaDigits(Math.round(data.usd.value))}`;
+    }
+    
+    if (data && data.aed && data.aed.value) {
+      tiAed.innerHTML = `💴 ${toFaDigits(Math.round(data.aed.value))}`;
+    }
+    
+    if (data && data.coin && data.coin.value) {
+      tiCoin.innerHTML = `🪙 ${toFaDigits(Math.round(data.coin.value))}`;
+    }
+  } catch (e) {
+    console.error('Error with navasan API:', e);
+    loadRatesFromAlternative();
+  }
+}
+
+// API جایگزین
+async function loadRatesFromAlternative() {
+  const tiUsd = document.getElementById('tiUsd');
+  const tiAed = document.getElementById('tiAed');
+  const tiCoin = document.getElementById('tiCoin');
+  
+  try {
+    // استفاده از bonbast.com
+    const response = await fetch('https://bonbast.com/graph', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: 'param=USD,AED,COIN'
+    });
+    
+    if (response.ok) {
+      const data = await response.json();
+      
+      if (data && data.USD && data.USD.sell) {
+        tiUsd.innerHTML = `💵 ${toFaDigits(data.USD.sell)}`;
+      } else {
+        tiUsd.textContent = '💵 —';
+      }
+      
+      if (data && data.AED && data.AED.sell) {
+        tiAed.innerHTML = `💴 ${toFaDigits(data.AED.sell)}`;
+      } else {
+        tiAed.textContent = '💴 —';
+      }
+      
+      if (data && data.COIN && data.COIN.sell) {
+        tiCoin.innerHTML = `🪙 ${toFaDigits(data.COIN.sell)}`;
+      } else {
+        tiCoin.textContent = '🪙 —';
+      }
+    } else {
+      // اگر bonbast هم جواب نداد، از شیت خودمان بخوانیم
+      loadRatesFromSheet();
+    }
+  } catch (e) {
+    console.error('Error with bonbast API:', e);
+    loadRatesFromSheet();
+  }
+}
+
+// خواندن از شیت Rates در صورت خطای API
+async function loadRatesFromSheet() {
+  const tiUsd = document.getElementById('tiUsd');
+  const tiAed = document.getElementById('tiAed');
+  const tiCoin = document.getElementById('tiCoin');
   
   try {
     const data = await sahelApiCall({ action: 'getRates' });
@@ -79,13 +147,8 @@ async function loadRates() {
       } else {
         tiCoin.textContent = '🪙 —';
       }
-    } else {
-      tiUsd.textContent = '💵 —';
-      tiAed.textContent = '💴 —';
-      tiCoin.textContent = '🪙 —';
     }
   } catch (e) {
-    console.error('Error loading rates:', e);
     tiUsd.textContent = '💵 —';
     tiAed.textContent = '💴 —';
     tiCoin.textContent = '🪙 —';
