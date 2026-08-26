@@ -1,6 +1,5 @@
 /* ===== نوار اطلاعات زنده: تاریخ شمسی، آب‌وهوا، نرخ‌ها ===== */
 
-// تابع تبدیل اعداد به فارسی
 function toFaDigits(n) {
   const fa = ['۰','۱','۲','۳','۴','۵','۶','۷','۸','۹'];
   return String(n).replace(/[0-9]/g, d => fa[d]);
@@ -11,8 +10,7 @@ function getPersianDate() {
   try {
     const now = new Date();
     const options = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' };
-    const dateStr = new Intl.DateTimeFormat('fa-IR', options).format(now);
-    return dateStr;
+    return new Intl.DateTimeFormat('fa-IR', options).format(now);
   } catch (e) {
     return '';
   }
@@ -21,8 +19,9 @@ function getPersianDate() {
 // آب و هوا قشم
 async function loadWeather() {
   const tiWeather = document.getElementById('tiWeather');
+  if (!tiWeather) return;
+  
   try {
-    // استفاده از API رایگان Open-Meteo برای قشم
     const res = await fetch('https://api.open-meteo.com/v1/forecast?latitude=26.96&longitude=56.28&current_weather=true&timezone=Asia/Tehran');
     const data = await res.json();
     if (data && data.current_weather) {
@@ -49,52 +48,35 @@ async function loadRates() {
   const tiUsd = document.getElementById('tiUsd');
   const tiAed = document.getElementById('tiAed');
   const tiCoin = document.getElementById('tiCoin');
+  if (!tiUsd || !tiAed || !tiCoin) return;
   
   try {
-    // استفاده از API نرخ ارز - bonbast.com (غیررسمی)
-    const res = await fetch('https://bonbast.com/graph', {
-      headers: { 'Accept': 'application/json' }
-    });
+    // استفاده از API رایگان - می‌توانید آدرس را تغییر دهید
+    const res = await fetch('https://api.exchangerate-api.com/v4/latest/USD');
     const data = await res.json();
     
-    // این API ممکن است تغییر کند - جایگزین: می‌توانید از API دیگری استفاده کنید
-    if (data) {
-      // باید ساختار دقیق API را بررسی کنید
-      const usd = data.usd_sell || data.USD?.sell || '—';
-      const aed = data.aed_sell || data.AED?.sell || '—';
-      const coin = data.coin_emami_sell || data.COIN?.sell || '—';
+    if (data && data.rates) {
+      const usdRate = Math.round((1 / data.rates.IRR) * 1000000); // تبدیل به تومان
+      const aedRate = Math.round((data.rates.AED / data.rates.IRR) * 1000000);
       
-      tiUsd.textContent = `دلار: ${toFaDigits(usd)}`;
-      tiAed.textContent = `درهم: ${toFaDigits(aed)}`;
-      tiCoin.textContent = `سکه: ${toFaDigits(coin)}`;
+      tiUsd.textContent = `دلار: ${toFaDigits(usdRate)}`;
+      tiAed.textContent = `درهم: ${toFaDigits(aedRate)}`;
     }
   } catch (e) {
-    // در صورت خطا از API جایگزین استفاده کنید
-    try {
-      // API جایگزین: myapi.ir یا هر API داخلی دیگر
-      const res = await fetch('https://api.myapi.ir/currency');
-      const data = await res.json();
-      if (data && data.currency) {
-        const usd = data.currency.find(c => c.code === 'USD');
-        const aed = data.currency.find(c => c.code === 'AED');
-        if (usd) tiUsd.textContent = `دلار: ${toFaDigits(usd.price)}`;
-        if (aed) tiAed.textContent = `درهم: ${toFaDigits(aed.price)}`;
-      }
-    } catch (e2) {
-      tiUsd.textContent = 'دلار: —';
-      tiAed.textContent = 'درهم: —';
+    tiUsd.textContent = 'دلار: —';
+    tiAed.textContent = 'درهم: —';
+  }
+  
+  // سکه - نیاز به API جداگانه
+  try {
+    // این API ممکن است کار نکند - باید یک API معتبر پیدا کنید
+    const res = await fetch('https://api.iraneconomics.com/coin');
+    const data = await res.json();
+    if (data && data.price) {
+      tiCoin.textContent = `سکه: ${toFaDigits(data.price)}`;
     }
-    
-    // سکه از منبع دیگر
-    try {
-      const res = await fetch('https://api.myapi.ir/coin');
-      const data = await res.json();
-      if (data && data.coin) {
-        tiCoin.textContent = `سکه: ${toFaDigits(data.coin.price)}`;
-      }
-    } catch (e3) {
-      tiCoin.textContent = 'سکه: —';
-    }
+  } catch (e) {
+    tiCoin.textContent = 'سکه: —';
   }
 }
 
@@ -107,7 +89,7 @@ function loadTopbarWidgets() {
   loadRates();
 }
 
-// بارگذاری اولیه و هر ۱۰ دقیقه یکبار به‌روزرسانی
+// بارگذاری اولیه و به‌روزرسانی دوره‌ای
 if (document.getElementById('tiDate')) {
   loadTopbarWidgets();
   setInterval(loadWeather, 600000); // آب و هوا هر ۱۰ دقیقه
