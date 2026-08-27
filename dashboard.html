@@ -69,6 +69,8 @@
     --glass-border: rgba(255, 255, 255, 0.55);
     --glass-highlight: rgba(255, 255, 255, 0.9);
     --glass-shadow: 0 8px 32px rgba(11,61,66,0.16), 0 1px 0 rgba(255,255,255,0.6) inset;
+    --bubble-in-bg: var(--bg-accent);
+    --chat-area-bg: #F9FCFC;
   }
 
   /* ==================== حالت تاریک ==================== */
@@ -109,6 +111,11 @@
 
   :root[data-theme="dark"] #fileSendForm {
     background: rgba(255,255,255,0.03);
+  }
+
+  :root[data-theme="dark"] {
+    --bubble-in-bg: rgba(255, 255, 255, 0.08);
+    --chat-area-bg: #0C2226;
   }
 
   html { color-scheme: light; }
