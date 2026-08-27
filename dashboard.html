@@ -4,6 +4,19 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>کارتابل | حسابداری هوشمند ساحل</title>
+
+<!-- ==================== تم: اعمال زودهنگام قبل از رندر (جلوگیری از فلش رنگ) ==================== -->
+<script>
+  (function () {
+    try {
+      var saved = localStorage.getItem('sahel-theme');
+      var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+      var theme = saved || (prefersDark ? 'dark' : 'light');
+      document.documentElement.setAttribute('data-theme', theme);
+    } catch (e) {}
+  })();
+</script>
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -58,6 +71,49 @@
     --glass-shadow: 0 8px 32px rgba(11,61,66,0.16), 0 1px 0 rgba(255,255,255,0.6) inset;
   }
 
+  /* ==================== حالت تاریک ==================== */
+  :root[data-theme="dark"] {
+    --bg-light: #0C2226;
+    --bg-accent: rgba(143, 227, 211, 0.10);
+    --border: rgba(255, 255, 255, 0.12);
+    --border-light: rgba(255, 255, 255, 0.09);
+    --text: #EAF6F4;
+    --text-muted: #86ADAF;
+    --shadow-sm: 0 2px 10px rgba(0,0,0,0.30);
+    --shadow-md: 0 4px 20px rgba(0,0,0,0.35);
+    --shadow-lg: 0 16px 40px rgba(0,0,0,0.45);
+    --glass-bg: rgba(16, 43, 47, 0.60);
+    --glass-bg-strong: rgba(16, 43, 47, 0.88);
+    --glass-border: rgba(255, 255, 255, 0.10);
+    --glass-highlight: rgba(255, 255, 255, 0.10);
+    --glass-shadow: 0 8px 32px rgba(0,0,0,0.45), 0 1px 0 rgba(255,255,255,0.05) inset;
+  }
+
+  :root[data-theme="dark"] .topbar-icon,
+  :root[data-theme="dark"] .brand-link {
+    color: var(--text);
+  }
+
+  :root[data-theme="dark"] #workspaceFrame {
+    background: var(--bg-light);
+  }
+
+  :root[data-theme="dark"] #fileSendForm select,
+  :root[data-theme="dark"] .file-chip,
+  :root[data-theme="dark"] .chat-input-row,
+  :root[data-theme="dark"] .chat-input-row textarea,
+  :root[data-theme="dark"] .file-upload {
+    background: rgba(255,255,255,0.05);
+    color: var(--text);
+  }
+
+  :root[data-theme="dark"] #fileSendForm {
+    background: rgba(255,255,255,0.03);
+  }
+
+  html { color-scheme: light; }
+  :root[data-theme="dark"] { color-scheme: dark; }
+
   html, body { 
     height: 100%; 
     margin: 0;
@@ -69,7 +125,11 @@
   .page { flex: 1; padding: 0 !important; min-height: 0; }
 
   /* ==================== نوار بالایی (شیشه‌ای شناور) ==================== */
-  body { background: var(--bg-light); }
+  body {
+    background: var(--bg-light);
+    color: var(--text);
+    transition: background 0.35s ease, color 0.35s ease;
+  }
 
   .topbar {
     display: flex;
@@ -341,6 +401,11 @@
   #tiUsd .rate-value { color: #0B8F7A; }
   #tiAed .rate-value { color: #A03A22; }
   #tiCoin .rate-value { color: #9A7209; }
+
+  :root[data-theme="dark"] #tiWeather { color: var(--accent-light); }
+  :root[data-theme="dark"] #tiUsd .rate-value { color: #4FE0C4; }
+  :root[data-theme="dark"] #tiAed .rate-value { color: #FF9A7A; }
+  :root[data-theme="dark"] #tiCoin .rate-value { color: #F2C94C; }
   
   #tiUsd:hover .rate-value,
   #tiCoin:hover .rate-value {
@@ -407,6 +472,95 @@
   }
   
   .topbar-support-phone span { white-space: nowrap; }
+
+  /* ==================== دکمه تعویض تم ==================== */
+  #themeToggleBtn .icon-moon { display: none; }
+  :root[data-theme="dark"] #themeToggleBtn .icon-sun { display: none; }
+  :root[data-theme="dark"] #themeToggleBtn .icon-moon { display: block; }
+
+  /* ==================== اسکلتون لودینگ (Shimmer) ==================== */
+  .skeleton-row {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    padding: 11px 16px;
+  }
+
+  .skeleton-avatar,
+  .skeleton-line {
+    border-radius: 8px;
+    background: linear-gradient(90deg,
+      rgba(11,61,66,0.07) 25%,
+      rgba(11,61,66,0.15) 37%,
+      rgba(11,61,66,0.07) 63%);
+    background-size: 400% 100%;
+    animation: skeletonShimmer 1.5s ease infinite;
+  }
+
+  :root[data-theme="dark"] .skeleton-avatar,
+  :root[data-theme="dark"] .skeleton-line {
+    background: linear-gradient(90deg,
+      rgba(255,255,255,0.06) 25%,
+      rgba(255,255,255,0.16) 37%,
+      rgba(255,255,255,0.06) 63%);
+    background-size: 400% 100%;
+  }
+
+  .skeleton-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .skeleton-lines {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+  }
+
+  .skeleton-line { height: 10px; }
+  .skeleton-line.long { width: 78%; }
+  .skeleton-line.mid { width: 55%; }
+  .skeleton-line.short { width: 34%; }
+
+  @keyframes skeletonShimmer {
+    0% { background-position: 100% 50%; }
+    100% { background-position: 0 50%; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .skeleton-avatar, .skeleton-line { animation: none; }
+  }
+
+  /* اسکلتون چیپ کاربر بالای نوار، تا زمانی که نام واقعی لود شود */
+  .topbar-user.is-loading .avatar {
+    background: linear-gradient(90deg, rgba(11,61,66,0.10) 25%, rgba(11,61,66,0.2) 37%, rgba(11,61,66,0.10) 63%);
+    background-size: 400% 100%;
+    animation: skeletonShimmer 1.5s ease infinite;
+    color: transparent;
+  }
+
+  .topbar-user.is-loading #topbarName,
+  .topbar-user.is-loading #topbarRole {
+    display: inline-block;
+    color: transparent;
+    border-radius: 5px;
+    background: linear-gradient(90deg, rgba(11,61,66,0.08) 25%, rgba(11,61,66,0.17) 37%, rgba(11,61,66,0.08) 63%);
+    background-size: 400% 100%;
+    animation: skeletonShimmer 1.5s ease infinite;
+  }
+
+  .topbar-user.is-loading #topbarName { width: 78px; height: 12px; }
+  .topbar-user.is-loading #topbarRole { width: 48px; height: 9px; margin-top: 2px; }
+
+  :root[data-theme="dark"] .topbar-user.is-loading .avatar,
+  :root[data-theme="dark"] .topbar-user.is-loading #topbarName,
+  :root[data-theme="dark"] .topbar-user.is-loading #topbarRole {
+    background: linear-gradient(90deg, rgba(255,255,255,0.07) 25%, rgba(255,255,255,0.18) 37%, rgba(255,255,255,0.07) 63%);
+    background-size: 400% 100%;
+  }
 
   /* ==================== پنل‌های کشویی ==================== */
   .user-dropdown, .file-panel, .members-panel, .chat-panel {
@@ -1093,7 +1247,7 @@
   <div class="main-col">
     <div class="topbar">
 
-      <div class="topbar-user" id="topbarUser">
+      <div class="topbar-user is-loading" id="topbarUser">
         <div class="avatar" id="topbarAvatar">–</div>
         <div class="who">
           <b id="topbarName">در حال بارگذاری...</b>
@@ -1110,6 +1264,11 @@
       <span class="topbar-icon" title="ارسال و دریافت فایل" id="fileTransferBtn">
         <svg viewBox="0 0 24 24" fill="none"><path d="M6 9C6 5.7 8.7 3 12 3C15.3 3 18 5.7 18 9C18 14 20 15 20 16H4C4 15 6 14 6 9Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M10 19C10 20.1 10.9 21 12 21C13.1 21 14 20.1 14 19" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
         <span class="badge" id="fileBadge" style="display:none;">0</span>
+      </span>
+
+      <span class="topbar-icon" title="حالت شب و روز" id="themeToggleBtn" aria-label="تغییر حالت روشن و تاریک">
+        <svg class="icon-sun" width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.5" stroke="currentColor" stroke-width="1.8"/><path d="M12 2.5V5M12 19V21.5M21.5 12H19M5 12H2.5M18.5 5.5L16.8 7.2M7.2 16.8L5.5 18.5M18.5 18.5L16.8 16.8M7.2 7.2L5.5 5.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <svg class="icon-moon" width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M20 14.3C18.9 14.9 17.6 15.2 16.3 15.2C11.9 15.2 8.3 11.6 8.3 7.2C8.3 5.9 8.6 4.6 9.2 3.5C5.4 4.6 2.7 8.1 2.7 12.2C2.7 17.2 6.8 21.3 11.8 21.3C15.9 21.3 19.4 18.6 20.5 14.8" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
       </span>
 
       <span class="topbar-icon" title="کارتابل اعضا" id="membersSwitchBtn" style="display:none;">
@@ -1202,14 +1361,18 @@
     </div>
 
     <div id="fileList">
-      <div class="file-empty">در حال بارگذاری...</div>
+      <div class="skeleton-row"><div class="skeleton-avatar"></div><div class="skeleton-lines"><div class="skeleton-line long"></div><div class="skeleton-line short"></div></div></div>
+      <div class="skeleton-row"><div class="skeleton-avatar"></div><div class="skeleton-lines"><div class="skeleton-line mid"></div><div class="skeleton-line short"></div></div></div>
+      <div class="skeleton-row"><div class="skeleton-avatar"></div><div class="skeleton-lines"><div class="skeleton-line long"></div><div class="skeleton-line short"></div></div></div>
     </div>
   </div>
 
   <div class="members-panel" id="membersPanel">
     <div class="members-panel-head"><b>کارتابل اعضا</b></div>
     <div id="membersList">
-      <div class="file-empty">در حال بارگذاری...</div>
+      <div class="skeleton-row"><div class="skeleton-avatar"></div><div class="skeleton-lines"><div class="skeleton-line mid"></div><div class="skeleton-line short"></div></div></div>
+      <div class="skeleton-row"><div class="skeleton-avatar"></div><div class="skeleton-lines"><div class="skeleton-line long"></div><div class="skeleton-line short"></div></div></div>
+      <div class="skeleton-row"><div class="skeleton-avatar"></div><div class="skeleton-lines"><div class="skeleton-line mid"></div><div class="skeleton-line short"></div></div></div>
     </div>
   </div>
 
@@ -1223,7 +1386,9 @@
 
     <div id="chatContactsView">
       <div id="chatContactsList">
-        <div class="file-empty">در حال بارگذاری...</div>
+        <div class="skeleton-row"><div class="skeleton-avatar"></div><div class="skeleton-lines"><div class="skeleton-line mid"></div><div class="skeleton-line long"></div></div></div>
+        <div class="skeleton-row"><div class="skeleton-avatar"></div><div class="skeleton-lines"><div class="skeleton-line long"></div><div class="skeleton-line short"></div></div></div>
+        <div class="skeleton-row"><div class="skeleton-avatar"></div><div class="skeleton-lines"><div class="skeleton-line mid"></div><div class="skeleton-line long"></div></div></div>
       </div>
     </div>
 
@@ -1244,6 +1409,42 @@
 <script src="js/dashboard.js" defer></script>
 <script src="js/chat.js" defer></script>
 <script src="js/topbar-widgets.js" defer></script>
+
+<!-- ==================== دکمه تعویض تم (شب/روز) ==================== -->
+<script>
+  (function () {
+    var btn = document.getElementById('themeToggleBtn');
+    if (!btn) return;
+    btn.addEventListener('click', function () {
+      var root = document.documentElement;
+      var next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      root.setAttribute('data-theme', next);
+      try { localStorage.setItem('sahel-theme', next); } catch (e) {}
+    });
+  })();
+</script>
+
+<!-- ==================== حذف خودکار اسکلتون چیپ کاربر بعد از لود داده واقعی ==================== -->
+<script>
+  (function () {
+    var chip = document.getElementById('topbarUser');
+    var nameEl = document.getElementById('topbarName');
+    if (!chip || !nameEl) return;
+    var placeholder = nameEl.textContent;
+    var done = false;
+    function clear() {
+      if (done) return;
+      done = true;
+      chip.classList.remove('is-loading');
+      observer.disconnect();
+    }
+    var observer = new MutationObserver(function () {
+      if (nameEl.textContent !== placeholder) clear();
+    });
+    observer.observe(nameEl, { childList: true, characterData: true, subtree: true });
+    setTimeout(clear, 8000); // اطمینان: حتی اگر تشخیص تغییر متن ناموفق بود، اسکلتون همیشگی نماند
+  })();
+</script>
 
 <!-- ==================== نوار شیشه‌ای: تشدید سایه هنگام اسکرول ==================== -->
 <script>
