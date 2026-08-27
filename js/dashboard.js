@@ -98,15 +98,16 @@ async function start() {
   document.getElementById('topbarRole').textContent = sahelUser.role === 'admin' ? 'مدیر سیستم' : 'کاربر';
   document.getElementById('topbarAvatar').textContent = sahelUser.initials || sahelUser.name.slice(0, 2);
 
-  // لود داشبورد
   try {
-    const dashData = await sahelApiCall({ action: 'dashboard', userId: sahelUser.id });
-    if (dashData.success && dashData.workspaces && dashData.workspaces.length) {
+    const data = await sahelApiCall({ action: 'getBootstrap', userId: sahelUser.id });
+    if (!data.success) throw new Error(data.message || 'خطا در دریافت اطلاعات');
+
+    // کارتابل / اعضا
+    if (data.dashboard && data.dashboard.workspaces && data.dashboard.workspaces.length) {
       document.getElementById('membersSwitchBtn').style.display = 'flex';
-      renderMembers(dashData.workspaces);
-      const own = dashData.workspaces.find(w => String(w.id) === String(sahelUser.id));
+      renderMembers(data.dashboard.workspaces);
+      const own = data.dashboard.workspaces.find(w => String(w.id) === String(sahelUser.id));
       if (own) {
-        // شیء own پراپرتی appUrl دارد، ولی setActiveMember انتظار url دارد — نگاشت درست انجام شود
         setActiveMember({ id: own.id, name: own.name, url: own.appUrl });
       } else {
         openWorkspace(sahelUser.appUrl);
@@ -114,30 +115,21 @@ async function start() {
     } else {
       openWorkspace(sahelUser.appUrl);
     }
+
+    if (data.rates) displayRates(data.rates);
+    if (data.users) renderRecipients(data.users);
+
+    renderFiles(data.files || []);
+    updateFileBadge(data.filesUnreadCount || 0);
+
+    renderChatContacts(data.chatContacts || []);
+    updateChatBadge(data.chatUnreadCount || 0);
+
   } catch (e) {
+    // اگر کل بوت‌استرپ شکست خورد، حداقل کارتابل شخصی خودش باز شود
     openWorkspace(sahelUser.appUrl);
   }
-
-  // لود نرخ‌ها
-  try {
-    const rateData = await sahelApiCall({ action: 'getRates' });
-    if (rateData.success) displayRates(rateData.rates);
-  } catch (e) {}
-
-  // لود کاربران
-  try {
-    const userData = await sahelApiCall({ action: 'getUsers', userId: sahelUser.id });
-    if (userData.success) renderRecipients(userData.users);
-  } catch (e) {}
-
-  // لود فایل‌ها و مخاطبین چت (با بج‌های واقعی)
-  await loadFiles();
-  await loadChatContacts();
 }
-
-/* ===== نمایش اعضا و مدیریت فعال ===== */
-let activeMemberId = null;
-
 function renderMembers(workspaces) {
   const membersList = document.getElementById('membersList');
   membersList.innerHTML = workspaces.map(w => `
