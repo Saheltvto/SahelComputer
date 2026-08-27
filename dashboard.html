@@ -2,13 +2,31 @@
 <html lang="fa" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>کارتابل | حسابداری هوشمند ساحل</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="css/style.css">
+
+<!-- ==================== PWA: نصب و اجرای تمام‌صفحه ==================== -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0B3D42">
+
+<!-- iOS Safari: باز شدن بدون نوار آدرس بعد از Add to Home Screen -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ساحل">
+<link rel="apple-touch-icon" href="assets/icon-192.png">
+<link rel="apple-touch-icon" sizes="192x192" href="assets/icon-192.png">
+<link rel="apple-touch-icon" sizes="512x512" href="assets/icon-512.png">
+
+<!-- Android/Chrome -->
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="icon" sizes="192x192" href="assets/icon-192.png">
+<link rel="icon" sizes="512x512" href="assets/icon-512.png">
+
 <style>
   /* ==================== استایل‌های پایه ==================== */
   :root {
@@ -1123,5 +1141,16 @@
 <script src="js/dashboard.js" defer></script>
 <script src="js/chat.js" defer></script>
 <script src="js/topbar-widgets.js" defer></script>
+
+<!-- ==================== PWA: ثبت سرویس‌ورکر ==================== -->
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('service-worker.js').catch((err) => {
+        console.warn('ثبت سرویس‌ورکر ناموفق بود:', err);
+      });
+    });
+  }
+</script>
 </body>
 </html>
