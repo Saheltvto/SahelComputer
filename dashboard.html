@@ -286,32 +286,53 @@
   .topbar-info {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 3px;
     margin-inline-end: auto;
-    padding: 6px 16px;
-    background: linear-gradient(135deg, rgba(246,250,250,0.95), rgba(234,246,244,0.95));
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border: 1px solid rgba(224,234,234,0.7);
-    border-radius: var(--radius-lg);
+    padding: 5px;
+    background: var(--glass-bg-strong);
+    backdrop-filter: blur(16px) saturate(1.5);
+    -webkit-backdrop-filter: blur(16px) saturate(1.5);
+    border: 1px solid var(--glass-border);
+    border-radius: 18px;
     font-size: 12px;
     color: var(--text);
     white-space: nowrap;
     overflow-x: auto;
-    max-width: 46vw;
-    box-shadow: var(--shadow-sm), inset 0 1px 0 rgba(255,255,255,0.7);
+    max-width: 48vw;
+    position: relative;
+    box-shadow: 0 2px 12px rgba(11,61,66,0.06), inset 0 1px 0 rgba(255,255,255,0.5);
+    transition: background 0.35s ease, border-color 0.35s ease;
+  }
+
+  :root[data-theme="dark"] .topbar-info {
+    box-shadow: 0 2px 14px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.04);
   }
   
   .topbar-info::-webkit-scrollbar { display: none; }
 
+  /* نشانگر «زنده» گوشه‌ی نوار اطلاعات */
+  .topbar-info::after {
+    content: '';
+    position: absolute;
+    top: -3px;
+    inset-inline-start: -3px;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 0 2px var(--glass-bg-strong);
+    animation: pulse 2s infinite;
+    pointer-events: none;
+  }
+
   .ti-item { 
     display: flex; 
     align-items: center; 
-    gap: 5px; 
+    gap: 7px; 
     font-weight: 600; 
     flex-shrink: 0;
-    padding: 5px 10px;
-    border-radius: 14px;
+    padding: 6px 11px;
+    border-radius: 13px;
     transition: var(--transition);
     cursor: default;
     position: relative;
@@ -331,31 +352,43 @@
   }
   
   .ti-item:hover {
-    background: rgba(47,184,166,0.12);
+    background: rgba(47,184,166,0.14);
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(47,184,166,0.15);
+    box-shadow: 0 4px 12px rgba(47,184,166,0.18);
   }
-  
+
+  /* آیکون اختصاصی هر مورد (تقویم / ابر / سکه) به‌جای نقطه‌ی چشمک‌زن یکسان */
   .ti-item::before {
     content: '';
-    width: 5px;
-    height: 5px;
-    border-radius: 50%;
-    background: var(--accent);
-    animation: pulse 2s infinite;
+    width: 14px;
+    height: 14px;
     flex-shrink: 0;
+    background-color: currentColor;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-size: contain;
+    mask-size: contain;
+    -webkit-mask-position: center;
+    mask-position: center;
+    opacity: 0.85;
   }
+
+  #tiDate::before    { -webkit-mask-image: url("data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%2024%2024%27%3E%3Cpath%20fill%3D%27black%27%20d%3D%27M7%202a1%201%200%200%201%201%201v1h8V3a1%201%200%201%201%202%200v1h1a2%202%200%200%201%202%202v13a2%202%200%200%201-2%202H5a2%202%200%200%201-2-2V6a2%202%200%200%201%202-2h1V3a1%201%200%200%201%201-1zM4%2010v9a1%201%200%200%200%201%201h14a1%201%200%200%200%201-1v-9H4zm3%203h3v3H7v-3z%27/%3E%3C/svg%3E");   mask-image: url("data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%2024%2024%27%3E%3Cpath%20fill%3D%27black%27%20d%3D%27M7%202a1%201%200%200%201%201%201v1h8V3a1%201%200%201%201%202%200v1h1a2%202%200%200%201%202%202v13a2%202%200%200%201-2%202H5a2%202%200%200%201-2-2V6a2%202%200%200%201%202-2h1V3a1%201%200%200%201%201-1zM4%2010v9a1%201%200%200%200%201%201h14a1%201%200%200%200%201-1v-9H4zm3%203h3v3H7v-3z%27/%3E%3C/svg%3E"); }
+  #tiWeather::before { -webkit-mask-image: url("data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%2024%2024%27%3E%3Cpath%20fill%3D%27black%27%20d%3D%27M7.5%2018a5%205%200%200%201-.7-9.95A6.5%206.5%200%200%201%2019%209.5a4%204%200%200%201-.6%208H7.5z%27/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%2024%2024%27%3E%3Cpath%20fill%3D%27black%27%20d%3D%27M7.5%2018a5%205%200%200%201-.7-9.95A6.5%206.5%200%200%201%2019%209.5a4%204%200%200%201-.6%208H7.5z%27/%3E%3C/svg%3E"); }
+  #tiUsd::before,
+  #tiAed::before,
+  #tiCoin::before    { -webkit-mask-image: url("data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%2024%2024%27%3E%3Cpath%20fill%3D%27black%27%20d%3D%27M12%202a10%2010%200%201%200%200%2020%2010%2010%200%200%200%200-20zm1%2015.9v1.1h-2v-1.06a3.6%203.6%200%200%201-2.5-2.5l1.9-.62a1.55%201.55%200%200%200%201.6%201.14c.82%200%201.35-.36%201.35-.93%200-.52-.37-.83-1.55-1.14-1.9-.51-2.98-1.19-2.98-2.83%200-1.33.98-2.31%202.18-2.57V5h2v1.08c1.08.21%201.9.88%202.26%201.9l-1.9.67a1.4%201.4%200%200%200-1.34-.88c-.72%200-1.19.31-1.19.83%200%20.51.42.77%201.6%201.08%201.96.51%202.94%201.29%202.94%202.94%200%201.39-.98%202.42-2.37%202.68z%27/%3E%3C/svg%3E");  mask-image: url("data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%2024%2024%27%3E%3Cpath%20fill%3D%27black%27%20d%3D%27M12%202a10%2010%200%201%200%200%2020%2010%2010%200%200%200%200-20zm1%2015.9v1.1h-2v-1.06a3.6%203.6%200%200%201-2.5-2.5l1.9-.62a1.55%201.55%200%200%200%201.6%201.14c.82%200%201.35-.36%201.35-.93%200-.52-.37-.83-1.55-1.14-1.9-.51-2.98-1.19-2.98-2.83%200-1.33.98-2.31%202.18-2.57V5h2v1.08c1.08.21%201.9.88%202.26%201.9l-1.9.67a1.4%201.4%200%200%200-1.34-.88c-.72%200-1.19.31-1.19.83%200%20.51.42.77%201.6%201.08%201.96.51%202.94%201.29%202.94%202.94%200%201.39-.98%202.42-2.37%202.68z%27/%3E%3C/svg%3E"); }
   
   @keyframes pulse {
-    0% { box-shadow: 0 0 0 0 rgba(47,184,166,0.4); }
-    70% { box-shadow: 0 0 0 5px rgba(47,184,166,0); }
+    0% { box-shadow: 0 0 0 0 rgba(47,184,166,0.5); }
+    70% { box-shadow: 0 0 0 6px rgba(47,184,166,0); }
     100% { box-shadow: 0 0 0 0 rgba(47,184,166,0); }
   }
   
   .ti-sep { 
     width: 1px; 
-    height: 18px; 
-    background: linear-gradient(to bottom, transparent, #DCE9E9, transparent);
+    height: 20px; 
+    background: linear-gradient(to bottom, transparent, var(--border), transparent);
     flex-shrink: 0; 
   }
   
@@ -369,18 +402,30 @@
   .ti-item:hover .rate-label { color: var(--text); }
   
   .rate-value {
-    font-size: 13px;
+    font-size: 13.5px;
     font-weight: 800;
-    letter-spacing: -0.5px;
+    letter-spacing: -0.3px;
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1;
     transition: var(--transition);
   }
   
   .ti-item:hover .rate-value { transform: scale(1.05); }
   
-  .date-value { font-size: 12px; font-weight: 700; }
+  .date-value {
+    font-size: 12.5px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    color: var(--text);
+  }
   
-  .weather-temp { font-size: 13px; font-weight: 800; color: var(--teal); }
-  .weather-desc { font-size: 11px; font-weight: 600; color: var(--teal); }
+  .weather-temp {
+    font-size: 13.5px;
+    font-weight: 800;
+    color: var(--accent);
+    font-variant-numeric: tabular-nums;
+  }
+  .weather-desc { font-size: 11px; font-weight: 600; color: var(--text-muted); }
   .weather-city {
     font-size: 10px;
     font-weight: 700;
@@ -396,16 +441,19 @@
     color: var(--text);
   }
   
-  #tiDate { color: var(--text); font-weight: 700; }
-  #tiWeather { color: var(--teal); }
-  #tiUsd .rate-value { color: #0B8F7A; }
-  #tiAed .rate-value { color: #A03A22; }
-  #tiCoin .rate-value { color: #9A7209; }
+  #tiDate    { color: var(--text); font-weight: 700; }
+  #tiWeather { color: var(--accent); }
+  #tiUsd .rate-value  { color: #0B8F7A; }
+  #tiAed .rate-value  { color: #C1662E; }
+  #tiCoin .rate-value { color: #A9820A; }
+  #tiUsd::before, #tiUsd    { color: #0B8F7A; }
+  #tiAed::before, #tiAed    { color: #C1662E; }
+  #tiCoin::before, #tiCoin  { color: #A9820A; }
 
   :root[data-theme="dark"] #tiWeather { color: var(--accent-light); }
-  :root[data-theme="dark"] #tiUsd .rate-value { color: #4FE0C4; }
-  :root[data-theme="dark"] #tiAed .rate-value { color: #FF9A7A; }
-  :root[data-theme="dark"] #tiCoin .rate-value { color: #F2C94C; }
+  :root[data-theme="dark"] #tiUsd .rate-value, :root[data-theme="dark"] #tiUsd::before, :root[data-theme="dark"] #tiUsd { color: #4FE0C4; }
+  :root[data-theme="dark"] #tiAed .rate-value, :root[data-theme="dark"] #tiAed::before, :root[data-theme="dark"] #tiAed { color: #FF9A7A; }
+  :root[data-theme="dark"] #tiCoin .rate-value, :root[data-theme="dark"] #tiCoin::before, :root[data-theme="dark"] #tiCoin { color: #F2C94C; }
   
   #tiUsd:hover .rate-value,
   #tiCoin:hover .rate-value {
