@@ -191,11 +191,13 @@ function renderFiles(files) {
 }
 
 /* ===== نمایش نرخ‌ها ===== */
+/* ===== نمایش نرخ‌ها ===== */
 function displayRates(rates) {
   if (!rates) return;
-  if (rates.USD) document.getElementById('tiUsd').innerHTML = `💵 <span class="rate-label">دلار</span> <span class="rate-value">${formatNumber(rates.USD)}</span>`;
-  if (rates.AED) document.getElementById('tiAed').innerHTML = `💴 <span class="rate-label">درهم</span> <span class="rate-value">${formatNumber(rates.AED)}</span>`;
-  if (rates.COIN) document.getElementById('tiCoin').innerHTML = `🪙 <span class="rate-label">سکه</span> <span class="rate-value">${formatNumber(rates.COIN)}</span>`;
+  if (rates.USD)  document.getElementById('tiUsd').innerHTML  = `<span class="rate-label">دلار</span> <span class="rate-value">${formatNumber(rates.USD)}</span>`;
+  if (rates.AED)  document.getElementById('tiAed').innerHTML  = `<span class="rate-label">درهم</span> <span class="rate-value">${formatNumber(rates.AED)}</span>`;
+  if (rates.COIN) document.getElementById('tiCoin').innerHTML = `<span class="rate-label">سکه</span> <span class="rate-value">${formatNumber(rates.COIN)}</span>`;
+  if (rates.GOLD) document.getElementById('tiGold').innerHTML = `<span class="rate-label">طلا</span> <span class="rate-value">${formatNumber(rates.GOLD)}</span>`;
 }
 
 /* ===== نمایش مخاطبین چت ===== */
