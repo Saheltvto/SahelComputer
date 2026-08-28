@@ -607,35 +607,8 @@
     overflow: visible;
   }
  
-  /* ---------- پالس ملایم و مداوم، مخصوص هر شبکه با رنگ برند خودش ---------- */
-  :root[data-theme="dark"] .topbar-social a::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    border-radius: 50%;
-    box-shadow: 0 0 0 0 var(--brand-glow, rgba(143,227,211,0.5));
-    animation: socialPulse 3.2s ease-in-out infinite;
-    pointer-events: none;
-  }
- 
-  /* هر شبکه تاخیر و رنگ پالس مخصوص خودش را دارد تا هم‌زمان چشمک نزنند */
-  :root[data-theme="dark"] .topbar-social a[aria-label*="اینستاگرام"] { --brand-glow: rgba(221,42,123,0.55); }
-  :root[data-theme="dark"] .topbar-social a[aria-label*="اینستاگرام"]::after { animation-delay: 0s; }
- 
-  :root[data-theme="dark"] .topbar-social a[aria-label*="ایکس"] { --brand-glow: rgba(255,255,255,0.35); }
-  :root[data-theme="dark"] .topbar-social a[aria-label*="ایکس"]::after { animation-delay: 0.8s; }
- 
-  :root[data-theme="dark"] .topbar-social a[aria-label*="یوتیوب"] { --brand-glow: rgba(255,0,0,0.5); }
-  :root[data-theme="dark"] .topbar-social a[aria-label*="یوتیوب"]::after { animation-delay: 1.6s; }
- 
-  :root[data-theme="dark"] .topbar-social a[aria-label*="واتساپ"] { --brand-glow: rgba(37,211,102,0.55); }
-  :root[data-theme="dark"] .topbar-social a[aria-label*="واتساپ"]::after { animation-delay: 2.4s; }
- 
-  @keyframes socialPulse {
-    0%   { box-shadow: 0 0 0 0 var(--brand-glow); }
-    50%  { box-shadow: 0 0 10px 3px var(--brand-glow); }
-    100% { box-shadow: 0 0 0 0 transparent; }
-  }
+
+
  
   /* ---------- افکت hover: روشن‌شدن کامل با رنگ برند + گلو قوی‌تر ---------- */
   :root[data-theme="dark"] .topbar-social a:hover {
@@ -643,10 +616,7 @@
     color: #fff;
     border-color: transparent;
   }
-  :root[data-theme="dark"] .topbar-social a:hover::after {
-    animation: none; /* موقع hover پالس خودکار متوقف می‌شود تا گلوی hover تداخل نداشته باشد */
-    box-shadow: none;
-  }
+
  
   :root[data-theme="dark"] .topbar-social a[aria-label*="اینستاگرام"]:hover {
     background: linear-gradient(135deg, #f58529, #dd2a7b, #8134af, #515bd4);
@@ -670,12 +640,7 @@
     box-shadow: 0 0 14px rgba(47,184,166,0.35);
   }
  
-  /* ---------- احترام به تنظیمات کاهش انیمیشن کاربر ---------- */
-  @media (prefers-reduced-motion: reduce) {
-    :root[data-theme="dark"] .topbar-social a::after {
-      animation: none;
-    }
-  }
+
   
   /* ==================== دکمه تعویض تم ==================== */
   #themeToggleBtn .icon-moon { display: none; }
