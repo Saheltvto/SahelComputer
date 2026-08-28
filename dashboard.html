@@ -456,11 +456,67 @@
   #tiUsd::before, #tiUsd    { color: #0B8F7A; }
   #tiAed::before, #tiAed    { color: #C1662E; }
   #tiCoin::before, #tiCoin  { color: #A9820A; }
+  #tiGold::before           { -webkit-mask-image: url("data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%2024%2024%27%3E%3Cpath%20fill%3D%27black%27%20d%3D%27M12%202a10%2010%200%201%200%200%2020%2010%2010%200%200%200%200-20zm1%2015.9v1.1h-2v-1.06a3.6%203.6%200%200%201-2.5-2.5l1.9-.62a1.55%201.55%200%200%200%201.6%201.14c.82%200%201.35-.36%201.35-.93%200-.52-.37-.83-1.55-1.14-1.9-.51-2.98-1.19-2.98-2.83%200-1.33.98-2.31%202.18-2.57V5h2v1.08c1.08.21%201.9.88%202.26%201.9l-1.9.67a1.4%201.4%200%200%200-1.34-.88c-.72%200-1.19.31-1.19.83%200%20.51.42.77%201.6%201.08%201.96.51%202.94%201.29%202.94%202.94%200%201.39-.98%202.42-2.37%202.68z%27/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%2024%2024%27%3E%3Cpath%20fill%3D%27black%27%20d%3D%27M12%202a10%2010%200%201%200%200%2020%2010%2010%200%200%200%200-20zm1%2015.9v1.1h-2v-1.06a3.6%203.6%200%200%201-2.5-2.5l1.9-.62a1.55%201.55%200%200%200%201.6%201.14c.82%200%201.35-.36%201.35-.93%200-.52-.37-.83-1.55-1.14-1.9-.51-2.98-1.19-2.98-2.83%200-1.33.98-2.31%202.18-2.57V5h2v1.08c1.08.21%201.9.88%202.26%201.9l-1.9.67a1.4%201.4%200%200%200-1.34-.88c-.72%200-1.19.31-1.19.83%200%20.51.42.77%201.6%201.08%201.96.51%202.94%201.29%202.94%202.94%200%201.39-.98%202.42-2.37%202.68z%27/%3E%3C/svg%3E"); }
+  #tiGold::before, #tiGold, #tiGold .rate-value { color: var(--gold); }
 
   :root[data-theme="dark"] #tiWeather { color: var(--accent-light); }
   :root[data-theme="dark"] #tiUsd .rate-value, :root[data-theme="dark"] #tiUsd::before, :root[data-theme="dark"] #tiUsd { color: #4FE0C4; }
   :root[data-theme="dark"] #tiAed .rate-value, :root[data-theme="dark"] #tiAed::before, :root[data-theme="dark"] #tiAed { color: #FF9A7A; }
   :root[data-theme="dark"] #tiCoin .rate-value, :root[data-theme="dark"] #tiCoin::before, :root[data-theme="dark"] #tiCoin { color: #F2C94C; }
+  :root[data-theme="dark"] #tiGold .rate-value, :root[data-theme="dark"] #tiGold::before, :root[data-theme="dark"] #tiGold { color: #F6D776; }
+
+  /* ===== فلش روند صعودی/نزولی نرخ =====
+     کلاس trend-up / trend-down به‌صورت خودکار (با مقایسه مقدار قبلی و جدید) به .ti-item اضافه می‌شود. */
+  .ti-item .trend-arrow {
+    display: inline-block;
+    font-size: 10px;
+    line-height: 1;
+    margin-inline-start: 1px;
+    transition: var(--transition);
+  }
+  .ti-item.trend-up .rate-value { color: #16A34A !important; }
+  .ti-item.trend-up .trend-arrow { color: #16A34A; }
+  .ti-item.trend-up .trend-arrow::before { content: '▲'; }
+  .ti-item.trend-down .rate-value { color: #DC2626 !important; }
+  .ti-item.trend-down .trend-arrow { color: #DC2626; }
+  .ti-item.trend-down .trend-arrow::before { content: '▼'; }
+
+  /* ===== نشانگر وضعیت اتصال اینترنت ===== */
+  .conn-status {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 11px;
+    border-radius: 14px;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-muted);
+    flex-shrink: 0;
+    transition: var(--transition);
+  }
+  .conn-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--accent);
+    animation: pulse 2s infinite;
+    flex-shrink: 0;
+  }
+  .conn-status.is-offline {
+    color: var(--danger);
+    background: rgba(192,71,43,0.1);
+    border-color: rgba(192,71,43,0.25);
+  }
+  .conn-status.is-offline .conn-dot {
+    background: var(--danger);
+    animation: none;
+  }
+  @media (max-width: 560px) {
+    .conn-status .conn-label { display: none; }
+    .conn-status { padding: 7px; }
+  }
   
   #tiUsd:hover .rate-value,
   #tiCoin:hover .rate-value {
@@ -1093,7 +1149,8 @@
     display: flex; 
     flex-direction: column; 
     gap: 10px; 
-    background: #F9FCFC; 
+    background: var(--chat-area-bg);
+    transition: background 0.35s ease;
   }
   
   #chatMessages::-webkit-scrollbar { width: 6px; }
@@ -1116,8 +1173,9 @@
   
   .chat-bubble-in { 
     align-self: flex-start; 
-    background: var(--bg-accent); 
+    background: var(--bubble-in-bg); 
     color: var(--text); 
+    border: 1px solid var(--border);
     border-bottom-left-radius: 4px;
     animation: bubbleIn 0.3s ease;
   }
@@ -1340,9 +1398,15 @@
         <span class="ti-item" id="tiAed" title="نرخ درهم امارات">—</span>
         <span class="ti-sep"></span>
         <span class="ti-item" id="tiCoin" title="نرخ سکه">—</span>
+        <span class="ti-sep"></span>
+        <span class="ti-item" id="tiGold" title="قیمت طلای ۱۸ عیار (هر گرم)">—</span>
       </div>
 
       <div class="topbar-brand-zone">
+        <span class="conn-status" id="connStatus" title="وضعیت اتصال اینترنت">
+          <span class="conn-dot" id="connDot"></span>
+          <span class="conn-label" id="connLabel">آنلاین</span>
+        </span>
         <a href="index.html" class="brand-link">
           <svg width="26" height="26" viewBox="0 0 40 40" fill="none"><circle cx="20" cy="20" r="20" fill="#0B3D42"/><path d="M4 24C8 20 12 20 16 24C20 28 24 28 28 24C32 20 36 20 36 20" stroke="#8FE3D3" stroke-width="2.4" stroke-linecap="round" fill="none"/></svg>
           <span style="display:none;" class="brand-full">حسابداری هوشمند ساحل</span>
@@ -1464,6 +1528,103 @@
 <script src="js/dashboard.js" defer></script>
 <script src="js/chat.js" defer></script>
 <script src="js/topbar-widgets.js" defer></script>
+
+<!-- ==================== نشانگر وضعیت اتصال اینترنت ==================== -->
+<script>
+  (function () {
+    var el = document.getElementById('connStatus');
+    var dot = document.getElementById('connDot');
+    var label = document.getElementById('connLabel');
+    if (!el) return;
+
+    function setOnline() {
+      el.classList.remove('is-offline');
+      el.title = 'اتصال برقرار است';
+      if (label) label.textContent = 'آنلاین';
+    }
+    function setOffline() {
+      el.classList.add('is-offline');
+      el.title = 'اتصال اینترنت قطع شده است';
+      if (label) label.textContent = 'آفلاین';
+    }
+
+    navigator.onLine ? setOnline() : setOffline();
+    window.addEventListener('online', setOnline);
+    window.addEventListener('offline', setOffline);
+  })();
+</script>
+
+<!-- ==================== فلش خودکار روند صعودی/نزولی نرخ‌ها ====================
+     با مشاهده‌ی تغییر متن هر مقدار (rate-value)، عدد جدید با مقدار قبلی (ذخیره‌شده
+     در localStorage) مقایسه می‌شود و کلاس trend-up / trend-down + فلش به‌صورت
+     خودکار اضافه می‌شود؛ به هیچ تغییری در topbar-widgets.js نیاز ندارد. -->
+<script>
+  (function () {
+    var ids = ['tiUsd', 'tiAed', 'tiCoin', 'tiGold'];
+    var STORAGE_PREFIX = 'sahel-rate-';
+
+    function toEnglishDigits(str) {
+      var persian = '۰۱۲۳۴۵۶۷۸۹';
+      var arabic = '٠١٢٣٤٥٦٧٨٩';
+      return String(str).replace(/[۰-۹٠-٩]/g, function (ch) {
+        var i = persian.indexOf(ch);
+        if (i > -1) return i;
+        i = arabic.indexOf(ch);
+        return i > -1 ? i : ch;
+      });
+    }
+
+    function extractNumber(text) {
+      var normalized = toEnglishDigits(text).replace(/[^\d.]/g, '');
+      if (!normalized) return null;
+      var n = parseFloat(normalized);
+      return isNaN(n) ? null : n;
+    }
+
+    function ensureArrow(item) {
+      var valueEl = item.querySelector('.rate-value');
+      if (!valueEl) return null;
+      var arrow = valueEl.querySelector('.trend-arrow');
+      if (!arrow) {
+        arrow = document.createElement('span');
+        arrow.className = 'trend-arrow';
+        valueEl.appendChild(arrow);
+      }
+      return valueEl;
+    }
+
+    function watch(id) {
+      var item = document.getElementById(id);
+      if (!item) return;
+      var storageKey = STORAGE_PREFIX + id;
+
+      function check() {
+        var valueEl = item.querySelector('.rate-value');
+        if (!valueEl) return;
+        var current = extractNumber(valueEl.textContent);
+        if (current === null) return;
+
+        var prevRaw = null;
+        try { prevRaw = localStorage.getItem(storageKey); } catch (e) {}
+        var prev = prevRaw !== null ? parseFloat(prevRaw) : null;
+
+        item.classList.remove('trend-up', 'trend-down');
+        if (prev !== null && !isNaN(prev) && current !== prev) {
+          item.classList.add(current > prev ? 'trend-up' : 'trend-down');
+          ensureArrow(item);
+        }
+
+        try { localStorage.setItem(storageKey, String(current)); } catch (e) {}
+      }
+
+      var observer = new MutationObserver(check);
+      observer.observe(item, { childList: true, subtree: true, characterData: true });
+      check();
+    }
+
+    ids.forEach(watch);
+  })();
+</script>
 
 <!-- ==================== دکمه تعویض تم (شب/روز) ==================== -->
 <script>
