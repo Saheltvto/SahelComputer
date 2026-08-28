@@ -1572,10 +1572,14 @@
      با مشاهده‌ی تغییر متن هر مقدار (rate-value)، عدد جدید با مقدار قبلی (ذخیره‌شده
      در localStorage) مقایسه می‌شود و کلاس trend-up / trend-down + فلش به‌صورت
      خودکار اضافه می‌شود؛ به هیچ تغییری در topbar-widgets.js نیاز ندارد. -->
+<!-- ==================== Sparkline کوچک کنار هر نرخ (بدون بک‌اند، بدون کتابخانه) ====================
+     این اسکریپت را دقیقاً بعد از اسکریپت «فلش خودکار روند صعودی/نزولی» که از قبل داری اضافه کن،
+     یا کاملاً جایگزینش کن (چون این نسخه هم فلش را دارد هم spark-line را اضافه می‌کند). -->
 <script>
   (function () {
     var ids = ['tiUsd', 'tiAed', 'tiCoin', 'tiGold'];
-    var STORAGE_PREFIX = 'sahel-rate-';
+    var STORAGE_PREFIX = 'sahel-rate-history-';
+    var HISTORY_LEN = 12; // تعداد نقاطی که در spark-line نشان داده می‌شود
 
     function toEnglishDigits(str) {
       var persian = '۰۱۲۳۴۵۶۷۸۹';
@@ -1595,43 +1599,91 @@
       return isNaN(n) ? null : n;
     }
 
-    function ensureArrow(item) {
+    function loadHistory(key) {
+      try {
+        var raw = localStorage.getItem(key);
+        return raw ? JSON.parse(raw) : [];
+      } catch (e) { return []; }
+    }
+
+    function saveHistory(key, arr) {
+      try { localStorage.setItem(key, JSON.stringify(arr)); } catch (e) {}
+    }
+
+    function buildSparkSvg(values, color) {
+      var w = 44, h = 18, pad = 2;
+      if (values.length < 2) return '';
+      var min = Math.min.apply(null, values);
+      var max = Math.max.apply(null, values);
+      var range = (max - min) || 1;
+      var step = (w - pad * 2) / (values.length - 1);
+
+      var points = values.map(function (v, i) {
+        var x = pad + i * step;
+        var y = h - pad - ((v - min) / range) * (h - pad * 2);
+        return x.toFixed(1) + ',' + y.toFixed(1);
+      }).join(' ');
+
+      var lastUp = values[values.length - 1] >= values[0];
+      var strokeColor = color || (lastUp ? '#16A34A' : '#DC2626');
+
+      return '<svg class="rate-spark" width="' + w + '" height="' + h + '" viewBox="0 0 ' + w + ' ' + h + '" ' +
+        'preserveAspectRatio="none" style="vertical-align:middle;margin-inline-start:4px;">' +
+        '<polyline points="' + points + '" fill="none" stroke="' + strokeColor + '" stroke-width="1.6" ' +
+        'stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    }
+
+    function ensureSparkSlot(item) {
       var valueEl = item.querySelector('.rate-value');
       if (!valueEl) return null;
-      var arrow = valueEl.querySelector('.trend-arrow');
-      if (!arrow) {
-        arrow = document.createElement('span');
-        arrow.className = 'trend-arrow';
-        valueEl.appendChild(arrow);
+      var slot = valueEl.querySelector('.rate-spark-slot');
+      if (!slot) {
+        slot = document.createElement('span');
+        slot.className = 'rate-spark-slot';
+        valueEl.appendChild(slot);
       }
-      return valueEl;
+      return slot;
     }
 
     function watch(id) {
       var item = document.getElementById(id);
       if (!item) return;
-      var storageKey = STORAGE_PREFIX + id;
+      var historyKey = STORAGE_PREFIX + id;
 
       function check() {
         var valueEl = item.querySelector('.rate-value');
         if (!valueEl) return;
-        var current = extractNumber(valueEl.textContent);
+
+        // متن خام را بدون spark-slot قبلی بخوان تا خودش را دوباره پارس نکند
+        var slot = valueEl.querySelector('.rate-spark-slot');
+        var rawText = slot ? valueEl.textContent.replace(slot.textContent, '') : valueEl.textContent;
+        var current = extractNumber(rawText);
         if (current === null) return;
 
-        var prevRaw = null;
-        try { prevRaw = localStorage.getItem(storageKey); } catch (e) {}
-        var prev = prevRaw !== null ? parseFloat(prevRaw) : null;
+        var history = loadHistory(historyKey);
+        var last = history.length ? history[history.length - 1] : null;
 
         item.classList.remove('trend-up', 'trend-down');
-        if (prev !== null && !isNaN(prev) && current !== prev) {
-          item.classList.add(current > prev ? 'trend-up' : 'trend-down');
-          ensureArrow(item);
+        if (last !== null && current !== last) {
+          item.classList.add(current > last ? 'trend-up' : 'trend-down');
         }
 
-        try { localStorage.setItem(storageKey, String(current)); } catch (e) {}
+        if (last !== current) {
+          history.push(current);
+          if (history.length > HISTORY_LEN) history = history.slice(-HISTORY_LEN);
+          saveHistory(historyKey, history);
+        }
+
+        var target = ensureSparkSlot(item);
+        if (target && history.length >= 2) {
+          target.innerHTML = buildSparkSvg(history);
+        }
       }
 
-      var observer = new MutationObserver(check);
+      var observer = new MutationObserver(function (mutations) {
+        // از حلقه بی‌نهایت جلوگیری کن: فقط وقتی تغییر از طرف ما نبوده پردازش کن
+        check();
+      });
       observer.observe(item, { childList: true, subtree: true, characterData: true });
       check();
     }
