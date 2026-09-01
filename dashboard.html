@@ -1610,36 +1610,6 @@
   })();
 </script>
 
-<!-- ==================== بهینه‌سازی نمایش قیمت‌ها: حذف سه رقم آخر سکه و طلا ==================== -->
-<script>
-  (function () {
-    function formatPrice(elementId) {
-      var el = document.getElementById(elementId);
-      if (!el) return;
-      
-      var observer = new MutationObserver(function () {
-        var text = el.textContent.trim();
-        if (text && text !== '—') {
-          // حذف سه رقم آخر و تبدیل به فرمت خلاصه
-          var numbers = text.replace(/[^\d]/g, '');
-          if (numbers.length > 3) {
-            var shortened = numbers.slice(0, -3);
-            var formatted = Number(shortened).toLocaleString('fa-IR');
-            el.textContent = formatted;
-            el.title = 'مبلغ کامل: ' + Number(numbers).toLocaleString('fa-IR') + ' تومان';
-          }
-        }
-      });
-      
-      observer.observe(el, { childList: true, characterData: true, subtree: true });
-    }
-    
-    // اعمال برای سکه و طلا
-    formatPrice('tiCoin');
-    formatPrice('tiGold');
-  })();
-</script>
-
 <!-- ==================== حذف خودکار اسکلتون چیپ کاربر بعد از لود داده واقعی ==================== -->
 <script>
   (function () {
