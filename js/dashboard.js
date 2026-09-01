@@ -5,24 +5,10 @@ if (!sahelUserRaw) {
 }
 const sahelUser = sahelUserRaw ? JSON.parse(sahelUserRaw) : null;
 
-/* ===== وضعیت سراسری ===== */
-let activeMemberId = null;
-let selectedFiles = [];
-
 /* ===== توابع کمکی ===== */
 function toFaDigits(n) {
   const fa = ['۰','۱','۲','۳','۴','۵','۶','۷','۸','۹'];
   return String(n).replace(/[0-9]/g, d => fa[d]);
-}
-
-function escapeHtml(str) {
-  if (str === null || str === undefined) return '';
-  return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
 }
 
 function positionPanel(panel, trigger) {
@@ -47,10 +33,6 @@ function formatTime(time) {
   try {
     return new Date(time).toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' });
   } catch (e) { return ''; }
-}
-
-function getInitials(name) {
-  return name ? name.slice(0, 2) : '؟؟';
 }
 
 /* ===== کارتابل ===== */
@@ -114,7 +96,7 @@ async function loadChatContacts() {
 async function start() {
   document.getElementById('topbarName').textContent = sahelUser.name;
   document.getElementById('topbarRole').textContent = sahelUser.role === 'admin' ? 'مدیر سیستم' : 'کاربر';
-  document.getElementById('topbarAvatar').textContent = sahelUser.initials || getInitials(sahelUser.name);
+  document.getElementById('topbarAvatar').textContent = sahelUser.initials || sahelUser.name.slice(0, 2);
 
   try {
     const data = await sahelApiCall({ action: 'getBootstrap', userId: sahelUser.id });
@@ -148,14 +130,13 @@ async function start() {
     openWorkspace(sahelUser.appUrl);
   }
 }
-
 function renderMembers(workspaces) {
   const membersList = document.getElementById('membersList');
   membersList.innerHTML = workspaces.map(w => `
-    <div class="member-row" data-id="${escapeHtml(w.id)}" data-url="${escapeHtml(w.appUrl)}" data-name="${escapeHtml(w.name)}">
-      <div class="member-avatar">${escapeHtml(w.initials || getInitials(w.name))}</div>
+    <div class="member-row" data-id="${w.id}" data-url="${w.appUrl}" data-name="${w.name}">
+      <div class="member-avatar">${w.initials || w.name.slice(0, 2)}</div>
       <div class="member-info">
-        <b>${escapeHtml(w.name)}${String(w.id) === String(sahelUser.id) ? ' (شما)' : ''}</b>
+        <b>${w.name}${String(w.id) === String(sahelUser.id) ? ' (شما)' : ''}</b>
         <span>${w.role === 'admin' ? 'مدیر سیستم' : 'کاربر'}</span>
       </div>
       <div class="member-check">
@@ -186,10 +167,10 @@ function setActiveMember(member) {
   openWorkspace(member.url);
   // نمایش نام عضو فعال
   document.getElementById('topbarName').textContent = member.name;
-  document.getElementById('topbarRole').textContent = String(member.id) === String(sahelUser.id) ?
-    (sahelUser.role === 'admin' ? 'مدیر سیستم' : 'کاربر') :
+  document.getElementById('topbarRole').textContent = member.id === sahelUser.id ? 
+    (sahelUser.role === 'admin' ? 'مدیر سیستم' : 'کاربر') : 
     'در حال مشاهده';
-  document.getElementById('topbarAvatar').textContent = getInitials(member.name);
+  document.getElementById('topbarAvatar').textContent = member.name.slice(0, 2);
 }
 
 /* ===== نمایش فایل‌ها ===== */
@@ -200,19 +181,17 @@ function renderFiles(files) {
     return;
   }
   fileList.innerHTML = files.map(f => `
-    <a class="file-item ${f.status === 'نخوانده' ? 'unread' : ''}" href="${escapeHtml(f.url)}" target="_blank" rel="noopener">
+    <a class="file-item ${f.status === 'نخوانده' ? 'unread' : ''}" href="${f.url}" target="_blank" rel="noopener">
       <div class="file-item-body">
-        <b>${escapeHtml(f.fileName)}</b>
-        <span>از طرف ${escapeHtml(f.senderName)}</span>
+        <b>${f.fileName}</b>
+        <span>از طرف ${f.senderName}</span>
       </div>
     </a>
   `).join('');
 }
 
-/* ===== نمایش نرخ‌ها =====
-   نکته: هر بار که این تابع اجرا می‌شود، اسپن .rate-value به‌طور کامل جایگزین
-   می‌شود؛ اسکریپت کوتاه‌سازی در index.html این اسپن‌های تازه را به‌صورت
-   خودکار تشخیص داده و فرمت می‌کند (بدون نیاز به تغییر در این فایل). */
+/* ===== نمایش نرخ‌ها ===== */
+/* ===== نمایش نرخ‌ها ===== */
 function displayRates(rates) {
   if (!rates) return;
   if (rates.USD)  document.getElementById('tiUsd').innerHTML  = `<span class="rate-label">دلار</span> <span class="rate-value">${formatNumber(rates.USD)}</span>`;
@@ -229,11 +208,11 @@ function renderChatContacts(contacts) {
     return;
   }
   contactsList.innerHTML = contacts.map(u => `
-    <div class="chat-contact-row" data-id="${escapeHtml(u.id)}" data-name="${escapeHtml(u.name)}">
-      <div class="member-avatar">${escapeHtml(u.initials || getInitials(u.name))}</div>
+    <div class="chat-contact-row" data-id="${u.id}" data-name="${u.name}">
+      <div class="member-avatar">${u.initials || u.name.slice(0, 2)}</div>
       <div class="member-info">
-        <b>${escapeHtml(u.name)}</b>
-        <span class="chat-contact-last">${escapeHtml(u.lastMessage) || 'برای گفتگو کلیک کنید'}</span>
+        <b>${u.name}</b>
+        <span class="chat-contact-last">${u.lastMessage || 'برای گفتگو کلیک کنید'}</span>
       </div>
       ${u.unreadCount > 0 ? '<span class="chat-unread-dot"></span>' : ''}
     </div>
@@ -252,7 +231,7 @@ function renderRecipients(users) {
   const select = document.getElementById('fileRecipient');
   if (!select || !users || !users.length) return;
   select.innerHTML = '<option value="">انتخاب گیرنده...</option>' +
-    users.map(u => `<option value="${escapeHtml(u.id)}">${escapeHtml(u.name)}</option>`).join('');
+    users.map(u => `<option value="${u.id}">${u.name}</option>`).join('');
 }
 
 /* ===== چت ===== */
@@ -282,11 +261,6 @@ async function loadChatMessages(contactId) {
   }
 }
 
-function linkify(escapedText) {
-  // چون متن از قبل escape شده، الگوی لینک هم باید روی نسخه‌ی escape‌شده تطبیق بخورد
-  return escapedText.replace(/https?:\/\/[^\s<]+/g, url => `<a href="${url}" target="_blank" rel="noopener">${url}</a>`);
-}
-
 function renderChatMessages(messages, contactId) {
   const chatMessages = document.getElementById('chatMessages');
   if (!messages || !messages.length) {
@@ -297,10 +271,10 @@ function renderChatMessages(messages, contactId) {
   chatMessages.innerHTML = messages.map(msg => {
     const isOut = String(msg.senderId) === String(sahelUser.id);
     const timeStr = formatTime(msg.time);
-    const safeText = linkify(escapeHtml(msg.text));
+    const textWithLinks = msg.text.replace(/https?:\/\/[^\s]+/g, url => `<a href="${url}" target="_blank">${url}</a>`);
     return `
       <div class="chat-bubble ${isOut ? 'chat-bubble-out' : 'chat-bubble-in'}">
-        ${safeText}
+        ${textWithLinks}
         <span class="chat-bubble-time">${timeStr}</span>
       </div>
     `;
@@ -326,6 +300,7 @@ const fileInput = document.getElementById('fileInput');
 const fileUploadLabel = document.getElementById('fileUploadLabel');
 const fileInputLabel = document.getElementById('fileInputLabel');
 const fileChipsList = document.getElementById('fileChipsList');
+let selectedFiles = [];
 
 function formatFileSize(bytes) {
   if (bytes < 1024) return bytes + ' B';
@@ -341,10 +316,10 @@ function renderFileChips() {
     return;
   }
   fileUploadLabel.classList.add('has-file');
-  fileInputLabel.textContent = selectedFiles.length === 1 ? selectedFiles[0].name : `${toFaDigits(selectedFiles.length)} فایل انتخاب شد`;
+  fileInputLabel.textContent = selectedFiles.length === 1 ? selectedFiles[0].name : `${selectedFiles.length} فایل انتخاب شد`;
   fileChipsList.innerHTML = selectedFiles.map((f, i) => `
     <div class="file-chip">
-      <span class="file-chip-name">${escapeHtml(f.name)}</span>
+      <span class="file-chip-name">${f.name}</span>
       <span class="file-chip-size">${formatFileSize(f.size)}</span>
       <button type="button" class="file-chip-remove" data-i="${i}">✕</button>
     </div>
@@ -381,10 +356,10 @@ fileSendBtn?.addEventListener('click', async () => {
 
   fileSendBtn.disabled = true;
   let sentCount = 0;
-  const failedNames = [];
+  let failedNames = [];
 
   for (const file of selectedFiles) {
-    fileSendStatus.textContent = `در حال ارسال ${toFaDigits(sentCount + 1)} از ${toFaDigits(selectedFiles.length)}...`;
+    fileSendStatus.textContent = `در حال ارسال ${sentCount + 1} از ${selectedFiles.length}...`;
     try {
       const reader = new FileReader();
       const base64 = await new Promise((resolve, reject) => {
