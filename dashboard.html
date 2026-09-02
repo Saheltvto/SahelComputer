@@ -186,6 +186,7 @@
     padding: 6px 10px;
     border-radius: 12px;
     transition: var(--transition-fast);
+    flex-shrink: 0; /* چیپ کاربر نباید هرگز فشرده شود؛ فقط نوار اطلاعات جمع/باز می‌شود */
   }
 
   .topbar-user:hover,
@@ -289,10 +290,16 @@
     overflow-x: auto;
     scroll-snap-type: x proximity;
     -webkit-overflow-scrolling: touch;
-    max-width: 48vw;
+    flex: 1 1 auto;   /* به‌جای max-width ثابت، فضای واقعی باقی‌مانده در ردیف را می‌گیرد */
+    min-width: 0;     /* پیش‌نیاز فلاکس برای اینکه واقعاً بتواند جمع شود، نه اینکه محتوا را بیرون بزند */
     position: relative;
     box-shadow: 0 2px 12px rgba(11,61,66,0.06), inset 0 1px 0 rgba(255,255,255,0.5);
     transition: background 0.3s ease, border-color 0.3s ease;
+    /* اگر با وجود فلکس‌شدن هنوز جا کم بیاید و نیاز به اسکرول داخلی باشد،
+       این محو‌شدگی کناری نشان می‌دهد که موردی خارج از دید هست — به‌جای اینکه
+       بی‌هیچ نشانه‌ای انگار عدد «رفته» باشد. */
+    -webkit-mask-image: linear-gradient(to left, transparent 0, #000 18px, #000 calc(100% - 18px), transparent 100%);
+    mask-image: linear-gradient(to left, transparent 0, #000 18px, #000 calc(100% - 18px), transparent 100%);
   }
 
   :root[data-theme="dark"] .topbar-info { box-shadow: 0 2px 14px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.04); }
@@ -446,7 +453,7 @@
   }
 
   /* ==================== گوشه برند ==================== */
-  .topbar-brand-zone { display: flex; align-items: center; gap: 12px; }
+  .topbar-brand-zone { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
   .brand-link { display: flex; align-items: center; gap: 8px; font-weight: 800; color: var(--deep); text-decoration: none; transition: var(--transition-fast); }
   .brand-link:hover { transform: scale(1.05); }
   .topbar-social { display: flex; align-items: center; gap: 6px; }
@@ -714,16 +721,20 @@
   /* ==================== ریسپانسیو: دسکتاپ بزرگ / وایدسکرین ==================== */
   @media (min-width: 1600px) {
     .topbar { padding-inline: 22px; }
-    .topbar-info { max-width: 640px; }
+    .topbar-info { max-width: 720px; }
   }
 
   /* ==================== ریسپانسیو: تبلت ==================== */
   @media (max-width: 1100px) { .topbar-support-phone span { display: none; } }
-  @media (max-width: 900px)  { .topbar-info { max-width: 38vw; } }
 
   @media (max-width: 860px) {
     .file-panel, .members-panel { width: min(340px, 90vw); }
     .chat-panel { width: min(420px, 92vw); }
+  }
+
+  @media (max-width: 1100px) {
+    .ti-item { padding: 6px 8px; gap: 5px; }
+    .topbar-info { font-size: 11.5px; }
   }
 
   /* ==================== ریسپانسیو: موبایل ==================== */
