@@ -29,18 +29,6 @@ function formatNumber(num) {
   return toFaDigits(parts);
 }
 
-/* اگر عدد ۷ رقم یا بیشتر باشد (یعنی از ۱٬۰۰۰٬۰۰۰ به بالا — معمولاً سکه و طلا)،
-   سه رقم آخر آن حذف و «هزار» به انتهایش اضافه می‌شود؛ در غیر این صورت خود عدد
-   کامل نمایش داده می‌شود. فقط متن ساده تغییر می‌کند، هیچ چیز دیگری دست نمی‌خورد. */
-function formatRate(num) {
-  const digits = String(num).replace(/[^\d]/g, '');
-  if (digits.length > 6) {
-    const shortDigits = digits.slice(0, -3);
-    return formatNumber(shortDigits) + ' هزار';
-  }
-  return formatNumber(num);
-}
-
 function formatTime(time) {
   try {
     return new Date(time).toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' });
@@ -203,12 +191,13 @@ function renderFiles(files) {
 }
 
 /* ===== نمایش نرخ‌ها ===== */
+/* ===== نمایش نرخ‌ها ===== */
 function displayRates(rates) {
   if (!rates) return;
-  if (rates.USD)  document.getElementById('tiUsd').innerHTML  = `<span class="rate-label">دلار</span> <span class="rate-value">${formatRate(rates.USD)}</span>`;
-  if (rates.AED)  document.getElementById('tiAed').innerHTML  = `<span class="rate-label">درهم</span> <span class="rate-value">${formatRate(rates.AED)}</span>`;
-  if (rates.COIN) document.getElementById('tiCoin').innerHTML = `<span class="rate-label">سکه</span> <span class="rate-value">${formatRate(rates.COIN)}</span>`;
-  if (rates.GOLD) document.getElementById('tiGold').innerHTML = `<span class="rate-label">طلا</span> <span class="rate-value">${formatRate(rates.GOLD)}</span>`;
+  if (rates.USD)  document.getElementById('tiUsd').innerHTML  = `<span class="rate-label">دلار</span> <span class="rate-value">${formatNumber(rates.USD)}</span>`;
+  if (rates.AED)  document.getElementById('tiAed').innerHTML  = `<span class="rate-label">درهم</span> <span class="rate-value">${formatNumber(rates.AED)}</span>`;
+  if (rates.COIN) document.getElementById('tiCoin').innerHTML = `<span class="rate-label">سکه</span> <span class="rate-value">${formatNumber(rates.COIN)}</span>`;
+  if (rates.GOLD) document.getElementById('tiGold').innerHTML = `<span class="rate-label">طلا</span> <span class="rate-value">${formatNumber(rates.GOLD)}</span>`;
 }
 
 /* ===== نمایش مخاطبین چت ===== */
