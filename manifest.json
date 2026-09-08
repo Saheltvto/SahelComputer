@@ -2,21 +2,38 @@
   "name": "کارتابل | حسابداری هوشمند ساحل",
   "short_name": "ساحل کارتابل",
   "description": "کارتابل حسابداری هوشمند ساحل",
-  "start_url": "/",
+  "start_url": "./dashboard.html",
+  "scope": "./",
   "display": "standalone",
+  "orientation": "portrait-primary",
   "background_color": "#0B3D42",
   "theme_color": "#0B3D42",
-  "orientation": "portrait",
+  "lang": "fa",
+  "dir": "rtl",
   "icons": [
     {
       "src": "assets/icon-192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     },
     {
       "src": "assets/icon-512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "assets/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }
