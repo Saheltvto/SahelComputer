@@ -22,7 +22,6 @@ const DataCache = {
     } catch (e) {}
   },
   
-  // کش مخصوص هر کاربر
   getUserKey(key) {
     return key + '_' + (sahelUser ? sahelUser.id : 'guest');
   }
@@ -104,7 +103,6 @@ async function loadFiles() {
       updateFileBadge(fileData.unreadCount);
     }
   } catch (e) {
-    // استفاده از کش
     const cached = DataCache.get(DataCache.getUserKey('files'));
     if (cached && cached.success) {
       renderFiles(cached.files);
@@ -135,6 +133,14 @@ async function start() {
   document.getElementById('topbarName').textContent = sahelUser.name;
   document.getElementById('topbarRole').textContent = sahelUser.role === 'admin' ? 'مدیر سیستم' : 'کاربر';
   document.getElementById('topbarAvatar').textContent = sahelUser.initials || sahelUser.name.slice(0, 2);
+  document.getElementById('topbarUser').classList.remove('is-loading');
+  
+  // ذخیره اطلاعات کاربر در کش
+  DataCache.set(DataCache.getUserKey('user_data'), {
+    name: sahelUser.name,
+    role: sahelUser.role === 'admin' ? 'مدیر سیستم' : 'کاربر',
+    avatar: sahelUser.initials || sahelUser.name.slice(0, 2)
+  });
 
   // ⚡ اول از کش
   const cachedBootstrap = DataCache.get(DataCache.getUserKey('bootstrap'));
@@ -146,21 +152,17 @@ async function start() {
     const data = await sahelApiCall({ action: 'getBootstrap', userId: sahelUser.id });
     if (!data.success) throw new Error(data.message || 'خطا در دریافت اطلاعات');
     
-    // ذخیره در کش
     DataCache.set(DataCache.getUserKey('bootstrap'), data);
     
-    // 🔄 اعمال داده جدید فقط اگه با کش فرق داره
     if (!cachedBootstrap || JSON.stringify(cachedBootstrap) !== JSON.stringify(data)) {
       applyBootstrapData(data);
     }
   } catch (e) {
-    // اگه کش داشتیم، کاری نکنیم — قبلاً نمایش داده شده
     if (!cachedBootstrap) {
       openWorkspace(sahelUser.appUrl);
     }
   }
   
-  // بارگذاری فایلها و چت
   loadFiles();
   loadChatContacts();
 }
@@ -180,4 +182,337 @@ function applyBootstrapData(data) {
     openWorkspace(sahelUser.appUrl);
   }
 
-  if (data.rates) displayR
+  if (data.rates) displayRates(data.rates);
+  if (data.users) renderRecipients(data.users);
+
+  renderFiles(data.files || []);
+  updateFileBadge(data.filesUnreadCount || 0);
+
+  renderChatContacts(data.chatContacts || []);
+  updateChatBadge(data.chatUnreadCount || 0);
+}
+
+function renderMembers(workspaces) {
+  const membersList = document.getElementById('membersList');
+  membersList.innerHTML = workspaces.map(w => `
+    <div class="member-row" data-id="${w.id}" data-url="${w.appUrl}" data-name="${w.name}">
+      <div class="member-avatar">${w.initials || w.name.slice(0, 2)}</div>
+      <div class="member-info">
+        <b>${w.name}${String(w.id) === String(sahelUser.id) ? ' (شما)' : ''}</b>
+        <span>${w.role === 'admin' ? 'مدیر سیستم' : 'کاربر'}</span>
+      </div>
+      <div class="member-check">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M4 12L10 18L20 6" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+    </div>
+  `).join('');
+
+  membersList.querySelectorAll('.member-row').forEach(row => {
+    row.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const member = {
+        id: row.dataset.id,
+        url: row.dataset.url,
+        name: row.dataset.name
+      };
+      setActiveMember(member);
+      closeAllPanels();
+    });
+  });
+}
+
+function setActiveMember(member) {
+  activeMemberId = String(member.id);
+  document.querySelectorAll('.member-row').forEach(r => {
+    r.classList.toggle('active', r.dataset.id === activeMemberId);
+  });
+  openWorkspace(member.url);
+  document.getElementById('topbarName').textContent = member.name;
+  document.getElementById('topbarRole').textContent = member.id === sahelUser.id ? 
+    (sahelUser.role === 'admin' ? 'مدیر سیستم' : 'کاربر') : 
+    'در حال مشاهده';
+  document.getElementById('topbarAvatar').textContent = member.name.slice(0, 2);
+}
+
+function renderFiles(files) {
+  const fileList = document.getElementById('fileList');
+  if (!files || !files.length) {
+    fileList.innerHTML = '<div class="file-empty">فایلی دریافت نشده است.</div>';
+    return;
+  }
+  fileList.innerHTML = files.map(f => `
+    <a class="file-item ${f.status === 'نخوانده' ? 'unread' : ''}" href="${f.url}" target="_blank" rel="noopener">
+      <div class="file-item-body">
+        <b>${f.fileName}</b>
+        <span>از طرف ${f.senderName}</span>
+      </div>
+    </a>
+  `).join('');
+}
+
+function displayRates(rates) {
+  if (!rates) return;
+  if (rates.USD)  document.getElementById('tiUsd').innerHTML  = `<span class="rate-label">دلار</span> <span class="rate-value">${formatNumber(rates.USD)}</span>`;
+  if (rates.AED)  document.getElementById('tiAed').innerHTML  = `<span class="rate-label">درهم</span> <span class="rate-value">${formatNumber(rates.AED)}</span>`;
+  if (rates.COIN) document.getElementById('tiCoin').innerHTML = `<span class="rate-label">سکه</span> <span class="rate-value">${formatNumber(rates.COIN)}</span>`;
+  if (rates.GOLD) document.getElementById('tiGold').innerHTML = `<span class="rate-label">طلا</span> <span class="rate-value">${formatNumber(rates.GOLD)}</span>`;
+}
+
+function renderChatContacts(contacts) {
+  const contactsList = document.getElementById('chatContactsList');
+  if (!contacts || !contacts.length) {
+    contactsList.innerHTML = '<div class="file-empty">کاربری نیست.</div>';
+    return;
+  }
+  contactsList.innerHTML = contacts.map(u => `
+    <div class="chat-contact-row" data-id="${u.id}" data-name="${u.name}">
+      <div class="member-avatar">${u.initials || u.name.slice(0, 2)}</div>
+      <div class="member-info">
+        <b>${u.name}</b>
+        <span class="chat-contact-last">${u.lastMessage || 'برای گفتگو کلیک کنید'}</span>
+      </div>
+      ${u.unreadCount > 0 ? '<span class="chat-unread-dot"></span>' : ''}
+    </div>
+  `).join('');
+
+  contactsList.querySelectorAll('.chat-contact-row').forEach(row => {
+    row.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openChatWith(row.dataset.id, row.dataset.name);
+    });
+  });
+}
+
+function renderRecipients(users) {
+  const select = document.getElementById('fileRecipient');
+  if (!select || !users || !users.length) return;
+  select.innerHTML = '<option value="">انتخاب گیرنده...</option>' +
+    users.map(u => `<option value="${u.id}">${u.name}</option>`).join('');
+}
+
+function openChatWith(contactId, contactName) {
+  document.getElementById('chatPanelTitle').textContent = contactName;
+  document.getElementById('chatContactsView').style.display = 'none';
+  document.getElementById('chatThreadView').style.display = 'flex';
+  document.getElementById('chatBackBtn').style.display = 'flex';
+  loadChatMessages(contactId);
+
+  sahelApiCall({ action: 'markChatRead', userId: sahelUser.id, contactId: contactId })
+    .then(() => loadChatContacts())
+    .catch(() => {});
+}
+
+async function loadChatMessages(contactId) {
+  const chatMessages = document.getElementById('chatMessages');
+  chatMessages.innerHTML = '<div style="text-align:center;color:#7F9A9C;padding:20px;">در حال بارگذاری...</div>';
+  try {
+    const data = await sahelApiCall({ action: 'getChatMessages', userId: sahelUser.id, contactId: contactId });
+    if (data.success) {
+      renderChatMessages(data.messages, contactId);
+    }
+  } catch (e) {
+    chatMessages.innerHTML = '<div style="text-align:center;color:#7F9A9C;padding:20px;">خطا</div>';
+  }
+}
+
+function renderChatMessages(messages, contactId) {
+  const chatMessages = document.getElementById('chatMessages');
+  if (!messages || !messages.length) {
+    chatMessages.innerHTML = '<div style="text-align:center;color:#7F9A9C;padding:20px;">گفتگو را شروع کنید</div>';
+    chatMessages.dataset.contactId = contactId;
+    return;
+  }
+  chatMessages.innerHTML = messages.map(msg => {
+    const isOut = String(msg.senderId) === String(sahelUser.id);
+    const timeStr = formatTime(msg.time);
+    const textWithLinks = msg.text.replace(/https?:\/\/[^\s]+/g, url => `<a href="${url}" target="_blank">${url}</a>`);
+    return `
+      <div class="chat-bubble ${isOut ? 'chat-bubble-out' : 'chat-bubble-in'}">
+        ${textWithLinks}
+        <span class="chat-bubble-time">${timeStr}</span>
+      </div>
+    `;
+  }).join('');
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+  chatMessages.dataset.contactId = contactId;
+}
+
+document.getElementById('chatBackBtn')?.addEventListener('click', () => {
+  document.getElementById('chatThreadView').style.display = 'none';
+  document.getElementById('chatContactsView').style.display = 'flex';
+  document.getElementById('chatBackBtn').style.display = 'none';
+  document.getElementById('chatPanelTitle').textContent = 'گفتگوها';
+});
+
+const newFileBtn = document.getElementById('newFileBtn');
+const fileSendForm = document.getElementById('fileSendForm');
+const fileSendBtn = document.getElementById('fileSendBtn');
+const fileSendStatus = document.getElementById('fileSendStatus');
+const fileRecipient = document.getElementById('fileRecipient');
+const fileInput = document.getElementById('fileInput');
+const fileUploadLabel = document.getElementById('fileUploadLabel');
+const fileInputLabel = document.getElementById('fileInputLabel');
+const fileChipsList = document.getElementById('fileChipsList');
+let selectedFiles = [];
+
+function formatFileSize(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024 * 1024) return Math.round(bytes / 1024) + ' KB';
+  return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+}
+
+function renderFileChips() {
+  if (!selectedFiles.length) {
+    fileChipsList.innerHTML = '';
+    fileInputLabel.textContent = 'انتخاب فایل (چند فایل هم‌زمان ممکن است)';
+    fileUploadLabel.classList.remove('has-file');
+    return;
+  }
+  fileUploadLabel.classList.add('has-file');
+  fileInputLabel.textContent = selectedFiles.length === 1 ? selectedFiles[0].name : `${selectedFiles.length} فایل انتخاب شد`;
+  fileChipsList.innerHTML = selectedFiles.map((f, i) => `
+    <div class="file-chip">
+      <span class="file-chip-name">${f.name}</span>
+      <span class="file-chip-size">${formatFileSize(f.size)}</span>
+      <button type="button" class="file-chip-remove" data-i="${i}">✕</button>
+    </div>
+  `).join('');
+  fileChipsList.querySelectorAll('.file-chip-remove').forEach(btn => {
+    btn.addEventListener('click', () => {
+      selectedFiles.splice(Number(btn.dataset.i), 1);
+      renderFileChips();
+    });
+  });
+}
+
+newFileBtn?.addEventListener('click', () => {
+  const isOpen = fileSendForm.style.display === 'flex';
+  fileSendForm.style.display = isOpen ? 'none' : 'flex';
+  newFileBtn.classList.toggle('is-open', !isOpen);
+  fileSendStatus.textContent = '';
+});
+
+fileInput?.addEventListener('change', () => {
+  const newFiles = Array.from(fileInput.files);
+  newFiles.forEach(nf => {
+    const exists = selectedFiles.some(f => f.name === nf.name && f.size === nf.size);
+    if (!exists) selectedFiles.push(nf);
+  });
+  fileInput.value = '';
+  renderFileChips();
+});
+
+fileSendBtn?.addEventListener('click', async () => {
+  const receiverId = fileRecipient.value;
+  if (!receiverId) { fileSendStatus.textContent = 'گیرنده را انتخاب کنید.'; return; }
+  if (!selectedFiles.length) { fileSendStatus.textContent = 'حداقل یک فایل انتخاب کنید.'; return; }
+
+  fileSendBtn.disabled = true;
+  let sentCount = 0;
+  let failedNames = [];
+
+  for (const file of selectedFiles) {
+    fileSendStatus.textContent = `در حال ارسال ${sentCount + 1} از ${selectedFiles.length}...`;
+    try {
+      const reader = new FileReader();
+      const base64 = await new Promise((resolve, reject) => {
+        reader.onload = () => resolve(reader.result.split(',')[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+      const data = await sahelApiCall({
+        action: 'sendFile',
+        senderId: sahelUser.id,
+        receiverId: receiverId,
+        fileName: file.name,
+        mimeType: file.type,
+        fileData: base64
+      });
+      if (data.success) { sentCount++; } else { failedNames.push(file.name); }
+    } catch (err) { failedNames.push(file.name); }
+  }
+
+  fileSendBtn.disabled = false;
+  if (!failedNames.length) {
+    fileSendStatus.textContent = sentCount > 1 ? `${toFaDigits(sentCount)} فایل ارسال شد.` : 'فایل ارسال شد.';
+    selectedFiles = [];
+    renderFileChips();
+    setTimeout(() => { fileSendForm.style.display = 'none'; newFileBtn.classList.remove('is-open'); }, 1000);
+  } else {
+    fileSendStatus.textContent = `ارسال ناموفق: ${failedNames.join('، ')}`;
+  }
+});
+
+document.getElementById('fileTransferBtn')?.addEventListener('click', async (e) => {
+  e.stopPropagation();
+  const panel = document.getElementById('filePanel');
+  const isOpen = panel.style.display === 'flex';
+  closeAllPanels();
+  if (!isOpen) {
+    positionPanel(panel, e.currentTarget);
+    panel.style.display = 'flex';
+    try {
+      const data = await sahelApiCall({ action: 'getFiles', userId: sahelUser.id });
+      if (data.success) {
+        renderFiles(data.files);
+        if (data.unreadCount > 0) {
+          updateFileBadge(0);
+          sahelApiCall({ action: 'markFilesRead', userId: sahelUser.id }).catch(() => {});
+        }
+      }
+    } catch (err) {}
+  }
+});
+
+document.getElementById('filePanel')?.addEventListener('click', (e) => e.stopPropagation());
+
+document.getElementById('membersSwitchBtn')?.addEventListener('click', (e) => {
+  e.stopPropagation();
+  const panel = document.getElementById('membersPanel');
+  const isOpen = panel.style.display === 'flex';
+  closeAllPanels();
+  if (!isOpen) {
+    positionPanel(panel, e.currentTarget);
+    panel.style.display = 'flex';
+  }
+});
+
+document.getElementById('membersPanel')?.addEventListener('click', (e) => e.stopPropagation());
+
+document.getElementById('chatBtn')?.addEventListener('click', (e) => {
+  e.stopPropagation();
+  const panel = document.getElementById('chatPanel');
+  const isOpen = panel.style.display === 'flex';
+  closeAllPanels();
+  if (!isOpen) {
+    positionPanel(panel, e.currentTarget);
+    panel.style.display = 'flex';
+    document.getElementById('chatContactsView').style.display = 'flex';
+    document.getElementById('chatThreadView').style.display = 'none';
+    document.getElementById('chatBackBtn').style.display = 'none';
+    document.getElementById('chatPanelTitle').textContent = 'گفتگوها';
+    loadChatContacts();
+  }
+});
+
+document.getElementById('chatPanel')?.addEventListener('click', (e) => e.stopPropagation());
+
+document.getElementById('topbarUser')?.addEventListener('click', (e) => {
+  e.stopPropagation();
+  const panel = document.getElementById('userDropdown');
+  const isOpen = panel.style.display === 'block';
+  closeAllPanels();
+  if (!isOpen) {
+    positionPanel(panel, e.currentTarget);
+    panel.style.display = 'block';
+  }
+});
+
+document.getElementById('logoutBtn')?.addEventListener('click', () => {
+  sessionStorage.removeItem('sahel_user');
+});
+
+document.addEventListener('click', closeAllPanels);
+window.addEventListener('resize', closeAllPanels);
+
+start();
