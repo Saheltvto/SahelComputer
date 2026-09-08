@@ -16,7 +16,7 @@
     } catch (e) {}
   })();
 </script>
-<script src="js/offline-cache.js"></script>
+
 <!-- ==================== Preload منابع مهم ==================== -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -42,7 +42,6 @@
 <link rel="icon" sizes="512x512" href="assets/icon-512.png">
 
 <style>
-  /* استایلها بدون تغییر — فقط موارد ضروری */
   :root {
     --deep: #0B3D42;
     --teal: #14555C;
@@ -174,11 +173,8 @@
     100% { box-shadow: 0 0 0 0 rgba(47,184,166,0); }
   }
 
-  .ti-item { display: flex; align-items: center; gap: 7px; font-weight: 600; flex-shrink: 0; padding: 6px 11px; border-radius: 13px; transition: var(--transition); cursor: default; position: relative; animation: fadeInUp 0.5s ease; animation-fill-mode: both; }
+  .ti-item { display: flex; align-items: center; gap: 7px; font-weight: 600; flex-shrink: 0; padding: 6px 11px; border-radius: 13px; transition: var(--transition); cursor: default; position: relative; }
   .ti-item:hover { background: rgba(47,184,166,0.14); transform: translateY(-2px); box-shadow: 0 4px 12px rgba(47,184,166,0.18); }
-
-  @keyframes fadeInUp { from { opacity: 0; transform: translateY(10px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
-
   .ti-sep { width: 1px; height: 20px; background: linear-gradient(to bottom, transparent, var(--border), transparent); flex-shrink: 0; }
   .rate-label { font-size: 10.5px; font-weight: 700; color: var(--text-muted); }
   .rate-value { font-size: 13.5px; font-weight: 800; letter-spacing: -0.3px; font-variant-numeric: tabular-nums; }
@@ -196,10 +192,7 @@
   .brand-link { display: flex; align-items: center; gap: 8px; font-weight: 800; color: var(--deep); text-decoration: none; transition: var(--transition); }
   .brand-link:hover { transform: scale(1.05); }
   .topbar-social { display: flex; align-items: center; gap: 6px; }
-  .topbar-social a {
-    display: flex; align-items: center; justify-content: center; width: 32px; height: 32px;
-    border-radius: 50%; background: var(--bg-light); color: var(--deep); transition: var(--transition);
-  }
+  .topbar-social a { display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 50%; background: var(--bg-light); color: var(--deep); transition: var(--transition); }
   .topbar-social a:hover { background: var(--accent); color: #fff; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(47,184,166,0.3); }
   .topbar-social a svg { width: 15px; height: 15px; }
   .topbar-support-phone { width: auto !important; border-radius: 20px !important; padding: 0 14px !important; gap: 6px; font-size: 12.5px; font-weight: 700; background: linear-gradient(135deg, var(--accent), var(--teal)) !important; color: #fff !important; }
