@@ -142,29 +142,34 @@ async function start() {
     avatar: sahelUser.initials || sahelUser.name.slice(0, 2)
   });
 
-  // ⚡ اول از کش
+  // ⚡ اول از کش — نمایش فوری، بدون انتظار برای شبکه
   const cachedBootstrap = DataCache.get(DataCache.getUserKey('bootstrap'));
   if (cachedBootstrap && cachedBootstrap.success) {
     applyBootstrapData(cachedBootstrap);
   }
 
-  try {
-    const data = await sahelApiCall({ action: 'getBootstrap', userId: sahelUser.id });
-    if (!data.success) throw new Error(data.message || 'خطا در دریافت اطلاعات');
-    
-    DataCache.set(DataCache.getUserKey('bootstrap'), data);
-    
-    if (!cachedBootstrap || JSON.stringify(cachedBootstrap) !== JSON.stringify(data)) {
-      applyBootstrapData(data);
-    }
-  } catch (e) {
-    if (!cachedBootstrap) {
-      openWorkspace(sahelUser.appUrl);
-    }
-  }
-  
+  // ⚡ هر سه درخواست («بوت‌استرپ»، فایل‌ها، مخاطبین چت) هم‌زمان اجرا می‌شوند
+  // نه پشت‌سرهم — تا صفحه در مجموع سریع‌تر کامل بارگذاری شود.
+  const bootstrapPromise = sahelApiCall({ action: 'getBootstrap', userId: sahelUser.id }, { retries: 2, timeoutMs: 12000 })
+    .then((data) => {
+      if (!data.success) throw new Error(data.message || 'خطا در دریافت اطلاعات');
+
+      DataCache.set(DataCache.getUserKey('bootstrap'), data);
+
+      if (!cachedBootstrap || JSON.stringify(cachedBootstrap) !== JSON.stringify(data)) {
+        applyBootstrapData(data);
+      }
+    })
+    .catch(() => {
+      if (!cachedBootstrap) {
+        openWorkspace(sahelUser.appUrl);
+      }
+    });
+
   loadFiles();
   loadChatContacts();
+
+  await bootstrapPromise;
 }
 
 function applyBootstrapData(data) {
