@@ -35,10 +35,10 @@ function sahelPhotoUrl(raw) {
   if (!raw) return '';
   if (/drive\.google\.com|docs\.google\.com/i.test(raw)) {
     const m = raw.match(/\/d\/([a-zA-Z0-9_-]{20,})/) || raw.match(/[?&]id=([a-zA-Z0-9_-]{20,})/);
-    if (m) return 'https://drive.google.com/thumbnail?id=' + m[1] + '&sz=w200';
+    if (m) return 'https://lh3.googleusercontent.com/d/' + m[1] + '=w200';
   }
   if (/^[a-zA-Z0-9_-]{25,}$/.test(raw)) {
-    return 'https://drive.google.com/thumbnail?id=' + raw + '&sz=w200';
+    return 'https://lh3.googleusercontent.com/d/' + raw + '=w200';
   }
   if (/^(https?:\/\/|data:image\/)/i.test(raw)) return raw.replace(/"/g, '%22');
   return '';
@@ -47,8 +47,11 @@ function sahelPhotoUrl(raw) {
 // اگر عکس نبود یا لود نشد، همان حروف اول نام نمایش داده می‌شود
 function avatarHtml(photo, text) {
   const url = sahelPhotoUrl(photo);
+  // اگر آدرس اصلی لود نشد، یک بار آدرس جایگزین درایو را امتحان می‌کند؛ بعد حروف اول می‌ماند
+  const m = url.match(/lh3\.googleusercontent\.com\/d\/([a-zA-Z0-9_-]+)/);
+  const fb = m ? 'https://drive.google.com/thumbnail?id=' + m[1] + '&sz=w200' : '';
   const img = url
-    ? `<img class="avatar-img" src="${url}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">`
+    ? `<img class="avatar-img" src="${url}" data-fb="${fb}" alt="" referrerpolicy="no-referrer" onerror="if(this.dataset.fb){this.src=this.dataset.fb;this.dataset.fb='';}else{this.remove();}">`
     : '';
   return `<span class="avatar-txt">${text}</span>${img}`;
 }
