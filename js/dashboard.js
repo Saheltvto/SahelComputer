@@ -27,6 +27,36 @@ const DataCache = {
   }
 };
 
+/* ===== عکس پرسنلی (آواتار) ===== */
+// هر آدرس عکس: لینک گوگل درایو (هر شکلی)، فقط ID فایل درایو، یا لینک مستقیم تصویر
+function sahelPhotoUrl(raw) {
+  if (!raw) return '';
+  raw = String(raw).trim();
+  if (!raw) return '';
+  if (/drive\.google\.com|docs\.google\.com/i.test(raw)) {
+    const m = raw.match(/\/d\/([a-zA-Z0-9_-]{20,})/) || raw.match(/[?&]id=([a-zA-Z0-9_-]{20,})/);
+    if (m) return 'https://drive.google.com/thumbnail?id=' + m[1] + '&sz=w200';
+  }
+  if (/^[a-zA-Z0-9_-]{25,}$/.test(raw)) {
+    return 'https://drive.google.com/thumbnail?id=' + raw + '&sz=w200';
+  }
+  if (/^(https?:\/\/|data:image\/)/i.test(raw)) return raw.replace(/"/g, '%22');
+  return '';
+}
+
+// اگر عکس نبود یا لود نشد، همان حروف اول نام نمایش داده می‌شود
+function avatarHtml(photo, text) {
+  const url = sahelPhotoUrl(photo);
+  const img = url
+    ? `<img class="avatar-img" src="${url}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">`
+    : '';
+  return `<span class="avatar-txt">${text}</span>${img}`;
+}
+
+function setAvatar(el, photo, text) {
+  if (el) el.innerHTML = avatarHtml(photo, text);
+}
+
 /* ===== توابع کمکی ===== */
 function toFaDigits(n) {
   const fa = ['۰','۱','۲','۳','۴','۵','۶','۷','۸','۹'];
@@ -132,14 +162,15 @@ async function loadChatContacts() {
 async function start() {
   document.getElementById('topbarName').textContent = sahelUser.name;
   document.getElementById('topbarRole').textContent = sahelUser.role === 'admin' ? 'مدیر سیستم' : 'کاربر';
-  document.getElementById('topbarAvatar').textContent = sahelUser.initials || sahelUser.name.slice(0, 2);
+  setAvatar(document.getElementById('topbarAvatar'), sahelUser.photo, sahelUser.initials || sahelUser.name.slice(0, 2));
   document.getElementById('topbarUser').classList.remove('is-loading');
   
   // ذخیره اطلاعات کاربر در کش
   DataCache.set(DataCache.getUserKey('user_data'), {
     name: sahelUser.name,
     role: sahelUser.role === 'admin' ? 'مدیر سیستم' : 'کاربر',
-    avatar: sahelUser.initials || sahelUser.name.slice(0, 2)
+    avatar: sahelUser.initials || sahelUser.name.slice(0, 2),
+    photo: sahelUser.photo || ''
   });
 
   // ⚡ اول از کش — نمایش فوری، بدون انتظار برای شبکه
@@ -179,12 +210,19 @@ function applyBootstrapData(data) {
     renderMembers(data.dashboard.workspaces);
     const own = data.dashboard.workspaces.find(w => String(w.id) === String(sahelUser.id));
     if (own) {
-      setActiveMember({ id: own.id, name: own.name, url: own.appUrl });
+      setActiveMember({ id: own.id, name: own.name, url: own.appUrl, photo: own.photo || sahelUser.photo });
     } else {
       openWorkspace(sahelUser.appUrl);
     }
   } else {
     openWorkspace(sahelUser.appUrl);
+  }
+
+  // کاربر عادی (بدون کارتابل اعضا): عکس خودش را از سرور تازه کن
+  if (data.me && !(data.dashboard && data.dashboard.workspaces && data.dashboard.workspaces.length)) {
+    sahelUser.photo = data.me.photo || '';
+    try { sessionStorage.setItem('sahel_user', JSON.stringify(sahelUser)); } catch (e) {}
+    setAvatar(document.getElementById('topbarAvatar'), sahelUser.photo, sahelUser.initials || sahelUser.name.slice(0, 2));
   }
 
   if (data.rates) displayRates(data.rates);
@@ -200,8 +238,8 @@ function applyBootstrapData(data) {
 function renderMembers(workspaces) {
   const membersList = document.getElementById('membersList');
   membersList.innerHTML = workspaces.map(w => `
-    <div class="member-row" data-id="${w.id}" data-url="${w.appUrl}" data-name="${w.name}">
-      <div class="member-avatar">${w.initials || w.name.slice(0, 2)}</div>
+    <div class="member-row" data-id="${w.id}" data-url="${w.appUrl}" data-name="${w.name}" data-photo="${sahelPhotoUrl(w.photo)}">
+      <div class="member-avatar">${avatarHtml(w.photo, w.initials || w.name.slice(0, 2))}</div>
       <div class="member-info">
         <b>${w.name}${String(w.id) === String(sahelUser.id) ? ' (شما)' : ''}</b>
         <span>${w.role === 'admin' ? 'مدیر سیستم' : 'کاربر'}</span>
@@ -218,7 +256,8 @@ function renderMembers(workspaces) {
       const member = {
         id: row.dataset.id,
         url: row.dataset.url,
-        name: row.dataset.name
+        name: row.dataset.name,
+        photo: row.dataset.photo
       };
       setActiveMember(member);
       closeAllPanels();
@@ -236,7 +275,7 @@ function setActiveMember(member) {
   document.getElementById('topbarRole').textContent = member.id === sahelUser.id ? 
     (sahelUser.role === 'admin' ? 'مدیر سیستم' : 'کاربر') : 
     'در حال مشاهده';
-  document.getElementById('topbarAvatar').textContent = member.name.slice(0, 2);
+  setAvatar(document.getElementById('topbarAvatar'), member.photo, member.name.slice(0, 2));
 }
 
 function renderFiles(files) {
@@ -271,7 +310,7 @@ function renderChatContacts(contacts) {
   }
   contactsList.innerHTML = contacts.map(u => `
     <div class="chat-contact-row" data-id="${u.id}" data-name="${u.name}">
-      <div class="member-avatar">${u.initials || u.name.slice(0, 2)}</div>
+      <div class="member-avatar">${avatarHtml(u.photo, u.initials || u.name.slice(0, 2))}</div>
       <div class="member-info">
         <b>${u.name}</b>
         <span class="chat-contact-last">${u.lastMessage || 'برای گفتگو کلیک کنید'}</span>
