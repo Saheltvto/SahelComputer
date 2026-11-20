@@ -222,7 +222,7 @@ function applyBootstrapData(data) {
     if (own) {
       sahelUser.jobTitle = own.jobTitle || '';
       try { sessionStorage.setItem('sahel_user', JSON.stringify(sahelUser)); } catch (e) {}
-      setActiveMember({ id: own.id, name: own.name, url: own.appUrl, photo: own.photo || sahelUser.photo });
+      setActiveMember({ id: own.id, name: own.name, url: own.appUrl, photo: own.photo || sahelUser.photo, role: own.role || sahelUser.role, jobTitle: own.jobTitle });
     } else {
       openWorkspace(sahelUser.appUrl);
     }
@@ -252,7 +252,7 @@ function applyBootstrapData(data) {
 function renderMembers(workspaces) {
   const membersList = document.getElementById('membersList');
   membersList.innerHTML = workspaces.map(w => `
-    <div class="member-row" data-id="${w.id}" data-url="${w.appUrl}" data-name="${w.name}" data-photo="${sahelPhotoUrl(w.photo)}">
+    <div class="member-row" data-id="${w.id}" data-url="${w.appUrl}" data-name="${w.name}" data-photo="${sahelPhotoUrl(w.photo)}" data-role="${w.role || ''}" data-jobtitle="${String(w.jobTitle || '').replace(/"/g, '&quot;')}">
       <div class="member-avatar">${avatarHtml(w.photo, w.initials || w.name.slice(0, 2))}</div>
       <div class="member-info">
         <b>${w.name}${String(w.id) === String(sahelUser.id) ? ' (شما)' : ''}</b>
@@ -271,7 +271,9 @@ function renderMembers(workspaces) {
         id: row.dataset.id,
         url: row.dataset.url,
         name: row.dataset.name,
-        photo: row.dataset.photo
+        photo: row.dataset.photo,
+        role: row.dataset.role,
+        jobTitle: row.dataset.jobtitle
       };
       setActiveMember(member);
       closeAllPanels();
@@ -286,9 +288,7 @@ function setActiveMember(member) {
   });
   openWorkspace(member.url);
   document.getElementById('topbarName').textContent = member.name;
-  document.getElementById('topbarRole').textContent = member.id === sahelUser.id ? 
-    roleLabel(sahelUser.role, sahelUser.jobTitle) : 
-    'در حال مشاهده';
+  document.getElementById('topbarRole').textContent = roleLabel(member.role, member.jobTitle);
   setAvatar(document.getElementById('topbarAvatar'), member.photo, member.name.slice(0, 2));
 }
 
