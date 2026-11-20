@@ -27,6 +27,13 @@ const DataCache = {
   }
 };
 
+/* ===== عنوان شغلی ===== */
+// اگر ستون jobTitle (مثلاً دفتردار / انباردار / حسابدار) پر باشد همان نمایش داده می‌شود
+function roleLabel(role, jobTitle) {
+  const t = String(jobTitle || '').trim();
+  return t || (role === 'admin' ? 'مدیر سیستم' : 'کاربر');
+}
+
 /* ===== عکس پرسنلی (آواتار) ===== */
 // هر آدرس عکس: لینک گوگل درایو (هر شکلی)، فقط ID فایل درایو، یا لینک مستقیم تصویر
 function sahelPhotoUrl(raw) {
@@ -164,14 +171,14 @@ async function loadChatContacts() {
 /* ===== شروع با کش ===== */
 async function start() {
   document.getElementById('topbarName').textContent = sahelUser.name;
-  document.getElementById('topbarRole').textContent = sahelUser.role === 'admin' ? 'مدیر سیستم' : 'کاربر';
+  document.getElementById('topbarRole').textContent = roleLabel(sahelUser.role, sahelUser.jobTitle);
   setAvatar(document.getElementById('topbarAvatar'), sahelUser.photo, sahelUser.initials || sahelUser.name.slice(0, 2));
   document.getElementById('topbarUser').classList.remove('is-loading');
   
   // ذخیره اطلاعات کاربر در کش
   DataCache.set(DataCache.getUserKey('user_data'), {
     name: sahelUser.name,
-    role: sahelUser.role === 'admin' ? 'مدیر سیستم' : 'کاربر',
+    role: roleLabel(sahelUser.role, sahelUser.jobTitle),
     avatar: sahelUser.initials || sahelUser.name.slice(0, 2),
     photo: sahelUser.photo || ''
   });
@@ -213,6 +220,8 @@ function applyBootstrapData(data) {
     renderMembers(data.dashboard.workspaces);
     const own = data.dashboard.workspaces.find(w => String(w.id) === String(sahelUser.id));
     if (own) {
+      sahelUser.jobTitle = own.jobTitle || '';
+      try { sessionStorage.setItem('sahel_user', JSON.stringify(sahelUser)); } catch (e) {}
       setActiveMember({ id: own.id, name: own.name, url: own.appUrl, photo: own.photo || sahelUser.photo });
     } else {
       openWorkspace(sahelUser.appUrl);
@@ -221,9 +230,11 @@ function applyBootstrapData(data) {
     openWorkspace(sahelUser.appUrl);
   }
 
-  // کاربر عادی (بدون کارتابل اعضا): عکس خودش را از سرور تازه کن
+  // کاربر عادی (بدون کارتابل اعضا): عکس و عنوان شغلی خودش را از سرور تازه کن
   if (data.me && !(data.dashboard && data.dashboard.workspaces && data.dashboard.workspaces.length)) {
     sahelUser.photo = data.me.photo || '';
+    sahelUser.jobTitle = data.me.jobTitle || '';
+    document.getElementById('topbarRole').textContent = roleLabel(sahelUser.role, sahelUser.jobTitle);
     try { sessionStorage.setItem('sahel_user', JSON.stringify(sahelUser)); } catch (e) {}
     setAvatar(document.getElementById('topbarAvatar'), sahelUser.photo, sahelUser.initials || sahelUser.name.slice(0, 2));
   }
@@ -245,7 +256,7 @@ function renderMembers(workspaces) {
       <div class="member-avatar">${avatarHtml(w.photo, w.initials || w.name.slice(0, 2))}</div>
       <div class="member-info">
         <b>${w.name}${String(w.id) === String(sahelUser.id) ? ' (شما)' : ''}</b>
-        <span>${w.role === 'admin' ? 'مدیر سیستم' : 'کاربر'}</span>
+        <span>${roleLabel(w.role, w.jobTitle)}</span>
       </div>
       <div class="member-check">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M4 12L10 18L20 6" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -276,7 +287,7 @@ function setActiveMember(member) {
   openWorkspace(member.url);
   document.getElementById('topbarName').textContent = member.name;
   document.getElementById('topbarRole').textContent = member.id === sahelUser.id ? 
-    (sahelUser.role === 'admin' ? 'مدیر سیستم' : 'کاربر') : 
+    roleLabel(sahelUser.role, sahelUser.jobTitle) : 
     'در حال مشاهده';
   setAvatar(document.getElementById('topbarAvatar'), member.photo, member.name.slice(0, 2));
 }
