@@ -140,12 +140,21 @@
   html, body { 
     height: 100%; 
     margin: 0;
+    overflow: hidden;
     font-family: 'Vazirmatn', sans-serif;
   }
   
   .app-shell { display: block; }
-  .main-col { display: flex; flex-direction: column; height: 100vh; }
-  .page { flex: 1; padding: 0 !important; min-height: 0; }
+  .main-col {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .page { flex: 1; padding: 0 !important; min-height: 0; display: flex; flex-direction: column; }
 
   /* ==================== نوار بالایی (شیشه‌ای شناور) ==================== */
   body {
@@ -166,8 +175,8 @@
     border: 1px solid var(--glass-border);
     border-radius: 22px;
     box-shadow: var(--glass-shadow);
-    position: sticky;
-    top: 12px;
+    position: relative;
+    flex: 0 0 auto;
     z-index: 100;
     transition: box-shadow 0.35s ease, background 0.35s ease;
   }
@@ -771,7 +780,7 @@
   .user-dropdown-logout:hover { background: rgba(192,71,43,0.09); }
 
   /* ==================== ورک‌اسپیس ==================== */
-  #workspaceFrame { display: none; width: 100%; flex: 1; border: none; background: #fff; }
+  #workspaceFrame { display: none; width: 100%; flex: 1 1 auto; min-height: 0; border: none; background: #fff; }
   
   #workspaceEmpty {
     display: none;
@@ -784,7 +793,7 @@
     font-size: 15px;
   }
   
-  #workspaceView { display: flex; flex-direction: column; height: 100%; }
+  #workspaceView { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; }
 
   /* ==================== صندوق فایل ==================== */
   .file-panel {
@@ -1342,7 +1351,6 @@
       gap: 4px;
       margin: 8px 8px 8px;
       border-radius: 18px;
-      top: 8px;
     }
     
     .topbar-user .who { display: none; }
