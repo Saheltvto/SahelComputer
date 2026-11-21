@@ -97,19 +97,96 @@ function formatTime(time) {
   } catch (e) { return ''; }
 }
 
-/* ===== کارتابل ===== */
+/* ===== کارتابل (پشتیبانی از چند اپ برای هر کاربر) ===== */
 const workspaceFrame = document.getElementById('workspaceFrame');
 const workspaceEmpty = document.getElementById('workspaceEmpty');
+const appTabsEl = document.getElementById('appTabs');
+let wsFrames = {};   // آدرس اپ -> iframe (هر اپ یک بار بارگذاری می‌شود و با تعویض تب حفظ می‌ماند)
+let wsKey = '';
 
-function openWorkspace(url) {
-  if (!url) {
-    workspaceFrame.style.display = 'none';
+// ستون appUrl می‌تواند یک لینک ساده یا چند خط «عنوان|لینک» باشد
+function parseApps(raw) {
+  const list = String(raw || '').split(/\r?\n/).map(s => s.trim()).filter(Boolean).map((line, i) => {
+    const p = line.indexOf('|');
+    const title = p > -1 ? line.slice(0, p).trim() : '';
+    const url = (p > -1 ? line.slice(p + 1) : line).trim();
+    return { title: title || (i === 0 ? 'کارتابل' : 'برنامه ' + (i + 1)), url };
+  });
+  return list.filter(a => /^https?:\/\//i.test(a.url));
+}
+
+function resetWorkspaceFrames() {
+  Object.keys(wsFrames).forEach(u => {
+    const f = wsFrames[u];
+    if (f !== workspaceFrame) f.remove();
+  });
+  workspaceFrame.removeAttribute('src');
+  workspaceFrame.style.display = 'none';
+  wsFrames = {};
+}
+
+function getAppFrame(url) {
+  if (wsFrames[url]) return wsFrames[url];
+  let f;
+  if (!Object.keys(wsFrames).length) {
+    f = workspaceFrame;
+  } else {
+    f = workspaceFrame.cloneNode(false);
+    f.removeAttribute('id');
+    f.removeAttribute('src');
+    f.className = 'ws-frame';
+    workspaceFrame.parentNode.appendChild(f);
+  }
+  f.src = url;
+  wsFrames[url] = f;
+  return f;
+}
+
+function showApp(url) {
+  const frame = getAppFrame(url);
+  Object.keys(wsFrames).forEach(u => { wsFrames[u].style.display = wsFrames[u] === frame ? 'block' : 'none'; });
+  appTabsEl.querySelectorAll('.app-tab').forEach(t => t.setAttribute('aria-selected', String(t.dataset.url === url)));
+  try { sessionStorage.setItem('sahel_last_app', url); } catch (e) {}
+}
+
+function renderAppTabs(apps) {
+  if (apps.length < 2) { appTabsEl.hidden = true; appTabsEl.innerHTML = ''; return; }
+  appTabsEl.hidden = false;
+  appTabsEl.innerHTML = '';
+  apps.forEach(a => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'app-tab';
+    b.dataset.url = a.url;
+    b.setAttribute('role', 'tab');
+    b.textContent = a.title;
+    b.addEventListener('click', () => showApp(a.url));
+    appTabsEl.appendChild(b);
+  });
+}
+
+function openWorkspace(raw) {
+  const apps = parseApps(raw);
+  if (!apps.length) {
+    resetWorkspaceFrames();
+    wsKey = '';
+    renderAppTabs([]);
     workspaceEmpty.style.display = 'flex';
     return;
   }
   workspaceEmpty.style.display = 'none';
-  workspaceFrame.style.display = 'block';
-  if (workspaceFrame.src !== url) workspaceFrame.src = url;
+  const key = apps.map(a => a.url).join('\n');
+  if (key !== wsKey) {            // کاربر یا لیست اپ‌ها عوض شده است
+    resetWorkspaceFrames();
+    wsKey = key;
+    renderAppTabs(apps);
+  }
+  let active = apps[0].url;
+  try {
+    const last = sessionStorage.getItem('sahel_last_app');
+    if (apps.some(a => a.url === last)) active = last;
+  } catch (e) {}
+  showApp(active);
 }
 
 /* ===== بجهای اعلان ===== */
