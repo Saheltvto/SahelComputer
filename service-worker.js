@@ -1,6 +1,6 @@
 // ===== سرویس‌ورکر ساحل — کش کامل آفلاین (نسخهٔ ۴) =====
 // استراتژی: اول کش (فوری، حتی وقتی گیت‌هاب فیلتر است) + به‌روزرسانی در پس‌زمینه
-const CACHE_NAME = 'sahel-dashboard-shell-v4';
+const CACHE_NAME = 'sahel-dashboard-shell-v5';
 const SHELL_FILES = [
   './',
   './index.html',
@@ -18,7 +18,8 @@ const SHELL_FILES = [
   './assets/favicon.svg',
   './assets/icon-192.png',
   './assets/icon-512.png',
-  './assets/apple-touch-icon.png'
+  './assets/apple-touch-icon.png',
+  './assets/fonts/Vazirmatn-Variable.woff2'
 ];
 const FONT_HOSTS = ['fonts.googleapis.com', 'fonts.gstatic.com'];
 const NETWORK_TIMEOUT = 8000;
