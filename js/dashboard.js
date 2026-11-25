@@ -668,4 +668,77 @@ document.getElementById('logoutBtn')?.addEventListener('click', () => {
 document.addEventListener('click', closeAllPanels);
 window.addEventListener('resize', closeAllPanels);
 
+/* ===== پل میکروفون برای اپ‌های Apps Script داخل iframe =====
+   گوگل به قاب داخلی Apps Script اجازهٔ میکروفون نمی‌دهد؛ پس تشخیص گفتار اینجا
+   (صفحهٔ اصلی GitHub Pages) انجام می‌شود و متن به همان اپ برگردانده می‌شود. */
+(function () {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const LANGS = ['fa-IR', 'fa', 'en-US'];
+  let cur = null;
+
+  // فقط پیام‌هایی که از داخل iframe کارتابل خودمان می‌آیند پذیرفته می‌شوند
+  function isOurs(src) {
+    const frames = Array.from(document.querySelectorAll('iframe')).map(f => f.contentWindow);
+    try {
+      for (let w = src, n = 0; w && n < 6; w = w.parent, n++) {
+        if (frames.indexOf(w) > -1) return true;
+        if (w === w.parent) break;
+      }
+    } catch (e) {}
+    return false;
+  }
+
+  function reply(src, id, msg) {
+    msg.sahelMic = id;
+    try { src.postMessage(msg, '*'); } catch (e) {}
+  }
+
+  function finish(session) { if (cur === session) cur = null; }
+
+  function start(src, id) {
+    if (cur) { try { cur.rec.abort(); } catch (e) {} cur = null; }
+    if (!SR) { reply(src, id, { t: 'error', code: 'service-not-allowed' }); return; }
+    const session = { id: id, rec: null };
+    cur = session;
+    reply(src, id, { t: 'ack' });
+
+    function run(i) {
+      const rec = new SR();
+      let skipEnd = false;
+      session.rec = rec;
+      rec.lang = LANGS[i];
+      rec.interimResults = true;
+      rec.continuous = false;
+      rec.maxAlternatives = 1;
+      rec.onresult = function (e) {
+        let text = '';
+        for (let k = 0; k < e.results.length; k++) text += e.results[k][0].transcript;
+        reply(src, id, { t: 'result', text: text, final: !!e.results[e.results.length - 1].isFinal });
+      };
+      rec.onerror = function (e) {
+        const code = e.error;
+        if (code === 'aborted') return;
+        if (code === 'language-not-supported' && i < LANGS.length - 1) { skipEnd = true; run(i + 1); return; }
+        reply(src, id, { t: 'error', code: code });
+        finish(session);
+      };
+      rec.onend = function () {
+        if (skipEnd || cur !== session) return;
+        reply(src, id, { t: 'end' });
+        finish(session);
+      };
+      try { rec.start(); }
+      catch (x) { reply(src, id, { t: 'error', code: 'service-not-allowed' }); finish(session); }
+    }
+    run(0);
+  }
+
+  window.addEventListener('message', function (ev) {
+    const d = ev.data;
+    if (!d || typeof d !== 'object' || !d.sahelMic || !ev.source || !isOurs(ev.source)) return;
+    if (d.t === 'start') start(ev.source, String(d.sahelMic));
+    else if (d.t === 'stop' && cur && cur.id === String(d.sahelMic)) { try { cur.rec.stop(); } catch (e) {} }
+  });
+})();
+
 start();
