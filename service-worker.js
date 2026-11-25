@@ -1,5 +1,5 @@
 // ===== سرویس‌ورکر ساحل — با کش کامل آفلاین =====
-const CACHE_NAME = 'sahel-dashboard-shell-v2';
+const CACHE_NAME = 'sahel-dashboard-shell-v3';
 const SHELL_FILES = [
   './dashboard.html',
   './index.html',
