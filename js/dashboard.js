@@ -105,14 +105,32 @@ let wsFrames = {};   // آدرس اپ -> iframe (هر اپ یک بار بارگ�
 let wsKey = '';
 
 // ستون appUrl می‌تواند یک لینک ساده یا چند خط «عنوان|لینک» باشد
+// (کوتیشن اضافه، فاصله و نویسه‌های نامرئی RTL که موقع کپی از شیت می‌آیند پاک می‌شوند)
 function parseApps(raw) {
-  const list = String(raw || '').split(/\r?\n/).map(s => s.trim()).filter(Boolean).map((line, i) => {
-    const p = line.indexOf('|');
-    const title = p > -1 ? line.slice(0, p).trim() : '';
-    const url = (p > -1 ? line.slice(p + 1) : line).trim();
-    return { title: title || (i === 0 ? 'کارتابل' : 'برنامه ' + (i + 1)), url };
+  const clean = (t) => String(t || '')
+    .replace(/[\u200B-\u200F\u202A-\u202E\u2066-\u2069\uFEFF]/g, '')
+    .replace(/^[\s"'“”‘’]+|[\s"'“”‘’]+$/g, '');
+  const list = [];
+  String(raw || '').split(/\r?\n/).forEach((line) => {
+    line = clean(line);
+    if (!line) return;
+    const m = line.match(/^(.*?)\s*\|\s*(https?:\/\/\S+)$/i) || line.match(/^()(https?:\/\/\S+)$/i);
+    if (!m) return;
+    const url = clean(m[2]);
+    if (!/^https?:\/\//i.test(url)) return;
+    list.push({ title: clean(m[1]) || (list.length === 0 ? 'کارتابل' : 'برنامه ' + (list.length + 1)), url });
   });
-  return list.filter(a => /^https?:\/\//i.test(a.url));
+  return list;
+}
+
+// امن‌سازی متن برای قرارگرفتن داخل HTML / attribute
+function escHtml(v) {
+  return String(v == null ? '' : v)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+function escAttr(v) {
+  return escHtml(v).replace(/\r?\n/g, '&#10;');
 }
 
 function resetWorkspaceFrames() {
@@ -329,11 +347,11 @@ function applyBootstrapData(data) {
 function renderMembers(workspaces) {
   const membersList = document.getElementById('membersList');
   membersList.innerHTML = workspaces.map(w => `
-    <div class="member-row" data-id="${w.id}" data-url="${w.appUrl}" data-name="${w.name}" data-photo="${sahelPhotoUrl(w.photo)}" data-role="${w.role || ''}" data-jobtitle="${String(w.jobTitle || '').replace(/"/g, '&quot;')}">
+    <div class="member-row" data-id="${escAttr(w.id)}" data-url="${escAttr(w.appUrl)}" data-name="${escAttr(w.name)}" data-photo="${escAttr(sahelPhotoUrl(w.photo))}" data-role="${escAttr(w.role || '')}" data-jobtitle="${escAttr(w.jobTitle || '')}">
       <div class="member-avatar">${avatarHtml(w.photo, w.initials || w.name.slice(0, 2))}</div>
       <div class="member-info">
-        <b>${w.name}${String(w.id) === String(sahelUser.id) ? ' (شما)' : ''}</b>
-        <span>${roleLabel(w.role, w.jobTitle)}</span>
+        <b>${escHtml(w.name)}${String(w.id) === String(sahelUser.id) ? ' (شما)' : ''}</b>
+        <span>${escHtml(roleLabel(w.role, w.jobTitle))}</span>
       </div>
       <div class="member-check">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M4 12L10 18L20 6" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
