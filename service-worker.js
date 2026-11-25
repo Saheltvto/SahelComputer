@@ -1,10 +1,15 @@
-// ===== سرویس‌ورکر ساحل — با کش کامل آفلاین =====
-const CACHE_NAME = 'sahel-dashboard-shell-v3';
+// ===== سرویس‌ورکر ساحل — کش کامل آفلاین (نسخهٔ ۴) =====
+// استراتژی: اول کش (فوری، حتی وقتی گیت‌هاب فیلتر است) + به‌روزرسانی در پس‌زمینه
+const CACHE_NAME = 'sahel-dashboard-shell-v4';
 const SHELL_FILES = [
-  './dashboard.html',
+  './',
   './index.html',
+  './login.html',
+  './dashboard.html',
   './css/style.css',
   './js/config.js',
+  './js/main.js',
+  './js/auth.js',
   './js/dashboard.js',
   './js/chat.js',
   './js/topbar-widgets.js',
@@ -12,19 +17,20 @@ const SHELL_FILES = [
   './manifest.json',
   './assets/favicon.svg',
   './assets/icon-192.png',
-  './assets/icon-512.png'
+  './assets/icon-512.png',
+  './assets/apple-touch-icon.png'
 ];
+const FONT_HOSTS = ['fonts.googleapis.com', 'fonts.gstatic.com'];
+const NETWORK_TIMEOUT = 8000;
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then((cache) => {
-        console.log('✅ کش کردن فایل‌های اصلی...');
-        return cache.addAll(SHELL_FILES);
-      })
-      .catch((err) => {
-        console.warn('خطا در کش کردن:', err);
-      })
+    caches.open(CACHE_NAME).then((cache) =>
+      // تک‌تک کش می‌شوند تا اگر یک فایل پیدا نشد، بقیه هم کش نشدن اتفاق نیفتد
+      Promise.allSettled(
+        SHELL_FILES.map((f) => cache.add(new Request(f, { cache: 'reload' })))
+      )
+    )
   );
   self.skipWaiting();
 });
@@ -32,52 +38,65 @@ self.addEventListener('install', (event) => {
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
-      Promise.all(
-        keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))
-      )
+      Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))
     )
   );
   self.clients.claim();
 });
 
-// استراتژی: Network First + Cache Fallback + Background Update
+function fetchWithTimeout(req) {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), NETWORK_TIMEOUT);
+  return fetch(req, { signal: ctrl.signal }).finally(() => clearTimeout(t));
+}
+
+async function cacheFirst(event, sameOrigin) {
+  const req = event.request;
+  const cache = await caches.open(CACHE_NAME);
+  const cached = await cache.match(req, { ignoreSearch: sameOrigin });
+
+  const network = fetchWithTimeout(req).then((res) => {
+    // پاسخ ریدایرکت‌شده را کش نکن (مرورگر برای navigate قبولش نمی‌کند)
+    if (res && !res.redirected && (res.ok || res.type === 'opaque')) {
+      cache.put(req, res.clone());
+    }
+    return res;
+  });
+
+  if (cached) {
+    event.waitUntil(network.catch(() => {}));
+    return cached;
+  }
+
+  try {
+    return await network;
+  } catch (e) {
+    if (req.mode === 'navigate') {
+      const fallback = await cache.match('./login.html');
+      if (fallback) return fallback;
+    }
+    return new Response('آفلاین هستید', {
+      status: 503,
+      headers: { 'Content-Type': 'text/plain; charset=utf-8' }
+    });
+  }
+}
+
 self.addEventListener('fetch', (event) => {
-  if (event.request.method !== 'GET') return;
-  
-  const url = new URL(event.request.url);
-  
-  // فقط منابع همون دامنه
+  const req = event.request;
+  if (req.method !== 'GET') return;
+  const url = new URL(req.url);
+
+  // فونت وزیرمتن: کش شود تا بعد از بار اول به گوگل فونت وابسته نباشیم
+  if (FONT_HOSTS.includes(url.hostname)) {
+    event.respondWith(cacheFirst(event, false));
+    return;
+  }
+
+  // بقیهٔ دامنه‌ها (script.google.com، تصاویر درایو و ...) دست‌نخورده
   if (url.origin !== self.location.origin) return;
 
-  event.respondWith(
-    fetch(event.request)
-      .then((networkResponse) => {
-        // 🔄 کش کردن پاسخ جدید در پس‌زمینه
-        if (networkResponse && networkResponse.ok) {
-          const responseClone = networkResponse.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, responseClone);
-          });
-        }
-        return networkResponse;
-      })
-      .catch(() => {
-        // 📦 آفلاین — از کش بخون
-        return caches.match(event.request).then((cached) => {
-          if (cached) return cached;
-          
-          // اگه درخواست صفحه بود، dashboard.html رو بده
-          if (event.request.mode === 'navigate') {
-            return caches.match('./dashboard.html');
-          }
-          
-          return new Response('آفلاین هستید', { 
-            status: 503,
-            headers: { 'Content-Type': 'text/plain; charset=utf-8' }
-          });
-        });
-      })
-  );
+  event.respondWith(cacheFirst(event, true));
 });
 
 // Background Sync برای همگام‌سازی داده‌ها
@@ -85,9 +104,7 @@ self.addEventListener('sync', (event) => {
   if (event.tag === 'sync-chat') {
     event.waitUntil(
       self.clients.matchAll().then((clients) => {
-        clients.forEach((client) => {
-          client.postMessage({ type: 'SYNC_CHAT' });
-        });
+        clients.forEach((client) => client.postMessage({ type: 'SYNC_CHAT' }));
       })
     );
   }
@@ -101,7 +118,7 @@ self.addEventListener('notificationclick', (event) => {
       for (const client of clientList) {
         if ('focus' in client) return client.focus();
       }
-      return self.clients.openWindow('/dashboard.html');
+      return self.clients.openWindow(new URL('dashboard.html', self.registration.scope).href);
     })
   );
 });
