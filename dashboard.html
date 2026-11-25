@@ -1485,43 +1485,38 @@
                   transform 0.32s cubic-bezier(0.4, 0, 0.2, 1), visibility 0s linear 0.32s;
     }
 
-    /* نوار لمسیِ باریک بالای صفحه — چون اپ داخل iframe است، لمس داخل آن به صفحه‌ی اصلی نمی‌رسد؛
-       این دستگیره همیشه در صفحه‌ی اصلی می‌ماند تا بتوان با کشیدن به پایین نوارها را برگرداند */
+    /* ژست‌های کشیدن عمودی را مرورگر نگیرد (افقی برای اسکرول تب‌ها آزاد می‌ماند) */
+    .topbar, .app-tabs { touch-action: pan-x; }
+
+    /* دستگیره‌ی همیشه‌دیدنی: زیر نوارها (وقتی نمایش‌اند) یا بالای صفحه (وقتی مخفی‌اند)
+       چون اپ داخل iframe است و لمس داخل آن به صفحه‌ی اصلی نمی‌رسد */
     #chromeHandle {
       display: block;
       position: fixed;
-      top: env(safe-area-inset-top, 0px);
+      top: calc(env(safe-area-inset-top, 0px) + var(--chrome-total, 0px));
       left: 0;
       right: 0;
-      height: 28px;
+      height: 30px;
       z-index: 140;
       touch-action: none;
       -webkit-tap-highlight-color: transparent;
-      opacity: 0;
-      visibility: hidden;
-      pointer-events: none;
-      transition: opacity 0.25s ease, visibility 0s linear 0.25s;
+      transition: top 0.32s cubic-bezier(0.4, 0, 0.2, 1);
     }
+    body.chrome-hidden #chromeHandle { top: env(safe-area-inset-top, 0px); }
     #chromeHandle::after {
       content: '';
       position: absolute;
-      top: 7px;
+      top: 6px;
       left: 50%;
-      width: 46px;
-      height: 5px;
-      margin-left: -23px;
+      width: 50px;
+      height: 6px;
+      margin-left: -25px;
       border-radius: 3px;
       background: var(--teal);
-      opacity: 0.6;
-      box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.55), 0 2px 6px rgba(0, 0, 0, 0.25);
+      opacity: 0.65;
+      box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.6), 0 2px 6px rgba(0, 0, 0, 0.25);
     }
     :root[data-theme="dark"] #chromeHandle::after { background: var(--accent); }
-    body.chrome-hidden #chromeHandle {
-      opacity: 1;
-      visibility: visible;
-      pointer-events: auto;
-      transition: opacity 0.25s ease 0.2s, visibility 0s linear 0.2s;
-    }
   }
 </style>
 </head>
@@ -1789,7 +1784,7 @@
     var tabs = document.getElementById('appTabs');
     var handle = document.getElementById('chromeHandle');
     var KEY = 'sahel-chrome-hidden';
-    var SWIPE = 28; // حداقل مسافت کشیدن (پیکسل)
+    var SWIPE = 18; // حداقل مسافت کشیدن (پیکسل)
     var mq = window.matchMedia('(max-width: 768px)');
 
     function setHidden(h, persist) {
@@ -1807,6 +1802,9 @@
       if (tabs) {
         body.style.setProperty('--tabs-off', tabs.offsetHeight + 'px');
       }
+      var total = (topbar ? topbar.offsetHeight + (parseFloat(getComputedStyle(topbar).marginTop) || 0) + (parseFloat(getComputedStyle(topbar).marginBottom) || 0) : 0)
+                + (tabs ? tabs.offsetHeight : 0);
+      if (!isHidden()) body.style.setProperty('--chrome-total', total + 'px');
     }
     if (window.ResizeObserver) {
       var ro = new ResizeObserver(measure);
@@ -1836,13 +1834,14 @@
       el.addEventListener('touchend', function () {
         if (!done && !moved && onTap && mq.matches) onTap();
       }, { passive: true });
+      el.addEventListener('touchcancel', function () { done = true; }, { passive: true });
     }
 
     // کشیدن به بالا روی نوارها => مخفی
     bindSwipe(topbar, function () { setHidden(true); });
     bindSwipe(tabs,   function () { setHidden(true); });
-    // کشیدن به پایین (یا ضربه) روی دستگیره‌ی بالای صفحه => نمایش
-    bindSwipe(handle, null, function () { setHidden(false); }, function () { setHidden(false); });
+    // دستگیره: کشیدن به پایین => نمایش، کشیدن به بالا => مخفی، ضربه => تعویض
+    bindSwipe(handle, function () { setHidden(true); }, function () { setHidden(false); }, function () { setHidden(!isHidden()); });
 
     // ---- اختیاری: اپ‌های داخل iframe می‌توانند با postMessage همین کار را بکنند ----
     window.addEventListener('message', function (e) {
