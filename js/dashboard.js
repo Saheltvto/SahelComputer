@@ -670,7 +670,10 @@ window.addEventListener('resize', closeAllPanels);
 
 /* ===== پل میکروفون برای اپ‌های Apps Script داخل iframe =====
    گوگل به قاب داخلی Apps Script اجازهٔ میکروفون نمی‌دهد؛ پس تشخیص گفتار اینجا
-   (صفحهٔ اصلی GitHub Pages) انجام می‌شود و متن به همان اپ برگردانده می‌شود. */
+   (صفحهٔ اصلی GitHub Pages) انجام می‌شود و متن/موج صدا به همان اپ برگردانده می‌شود.
+   دو پروتکل پشتیبانی می‌شود:
+   ۱) {sahelMic:id, t:'start'|'stop'}            ← SahelAi.html
+   ۲) {sahelCmd:'voice', act:'start'|'stop'}     ← App.html  (پاسخ: {sahelVoice2:{state:...}}) */
 (function () {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   const LANGS = ['fa-IR', 'fa', 'en-US'];
@@ -688,56 +691,127 @@ window.addEventListener('resize', closeAllPanels);
     return false;
   }
 
-  function reply(src, id, msg) {
-    msg.sahelMic = id;
-    try { src.postMessage(msg, '*'); } catch (e) {}
+  function post(src, obj) { try { src.postMessage(obj, '*'); } catch (e) {} }
+
+  // آداپتور پروتکل ۱ (SahelAi)
+  function adapterA(src, id) {
+    const m = (o) => { o.sahelMic = id; post(src, o); };
+    return {
+      ack: () => m({ t: 'ack' }),
+      start: () => {},
+      text: (t, fin) => m({ t: 'result', text: t, final: !!fin }),
+      level: () => {},
+      end: (t, err) => err ? m({ t: 'error', code: err }) : m({ t: 'end' })
+    };
   }
 
-  function finish(session) { if (cur === session) cur = null; }
+  // آداپتور پروتکل ۲ (App)
+  function adapterB(src) {
+    const m = (o) => post(src, { sahelVoice2: o });
+    return {
+      ack: () => m({ state: 'ack' }),
+      start: () => m({ state: 'start' }),
+      text: (t) => m({ state: 'txt', t: t }),
+      level: (a) => m({ state: 'lv', a: a }),
+      end: (t, err) => err ? m({ state: 'end', err: err }) : m({ state: 'end', t: t })
+    };
+  }
 
-  function start(src, id) {
-    if (cur) { try { cur.rec.abort(); } catch (e) {} cur = null; }
-    if (!SR) { reply(src, id, { t: 'error', code: 'service-not-allowed' }); return; }
-    const session = { id: id, rec: null };
-    cur = session;
-    reply(src, id, { t: 'ack' });
+  function cleanup(s) {
+    cancelAnimationFrame(s.raf);
+    try { s.stream && s.stream.getTracks().forEach(t => t.stop()); } catch (e) {}
+    try { s.ctx && s.ctx.close(); } catch (e) {}
+    s.stream = s.ctx = null;
+    if (cur === s) cur = null;
+  }
+
+  function stopCur() { if (cur) { try { cur.rec.stop(); } catch (e) {} } }
+
+  async function startLevel(s) {
+    try {
+      const st = await navigator.mediaDevices.getUserMedia({ audio: true });
+      if (cur !== s) { st.getTracks().forEach(t => t.stop()); return; }
+      s.stream = st;
+      const AC = window.AudioContext || window.webkitAudioContext;
+      s.ctx = new AC();
+      const an = s.ctx.createAnalyser();
+      an.fftSize = 1024;
+      s.ctx.createMediaStreamSource(st).connect(an);
+      const buf = new Uint8Array(an.fftSize);
+      let last = 0;
+      const tick = (t) => {
+        if (cur !== s) return;
+        if (t - last > 60) {
+          last = t;
+          an.getByteTimeDomainData(buf);
+          const a = [];
+          for (let k = 0; k < buf.length; k += 16) a.push(buf[k]);
+          s.out.level(a);
+        }
+        s.raf = requestAnimationFrame(tick);
+      };
+      s.raf = requestAnimationFrame(tick);
+    } catch (e) {}
+  }
+
+  function begin(out, id, withLevel) {
+    if (cur) { const o = cur; o.silent = true; try { o.rec.abort(); } catch (e) {} cleanup(o); }
+    const s = { id: id, out: out, rec: null, last: '', fin: '', err: '', raf: 0, silent: false };
+    cur = s;
+    out.ack();
+    if (!SR) { cleanup(s); out.end('', 'unsupported'); return; }
 
     function run(i) {
       const rec = new SR();
       let skipEnd = false;
-      session.rec = rec;
+      s.rec = rec;
       rec.lang = LANGS[i];
       rec.interimResults = true;
       rec.continuous = false;
       rec.maxAlternatives = 1;
+      rec.onstart = function () { if (!s.silent) { out.start(); if (withLevel) startLevel(s); } };
+      rec.onspeechend = function () { try { rec.stop(); } catch (e) {} };
       rec.onresult = function (e) {
-        let text = '';
-        for (let k = 0; k < e.results.length; k++) text += e.results[k][0].transcript;
-        reply(src, id, { t: 'result', text: text, final: !!e.results[e.results.length - 1].isFinal });
+        if (s.silent) return;
+        let t = '', f = '';
+        for (let k = 0; k < e.results.length; k++) {
+          const x = e.results[k][0].transcript;
+          t += (t && !/\s$/.test(t) ? ' ' : '') + x;
+          if (e.results[k].isFinal) f += (f && !/\s$/.test(f) ? ' ' : '') + x;
+        }
+        s.last = t;
+        if (f) s.fin = f;
+        out.text(t, !!e.results[e.results.length - 1].isFinal);
       };
       rec.onerror = function (e) {
-        const code = e.error;
+        const code = e.error || 'x';
         if (code === 'aborted') return;
         if (code === 'language-not-supported' && i < LANGS.length - 1) { skipEnd = true; run(i + 1); return; }
-        reply(src, id, { t: 'error', code: code });
-        finish(session);
+        s.err = code;
       };
       rec.onend = function () {
-        if (skipEnd || cur !== session) return;
-        reply(src, id, { t: 'end' });
-        finish(session);
+        if (skipEnd || s.silent) return;
+        const text = (s.fin || s.last || '').trim();
+        cleanup(s);
+        out.end(text, s.err);
       };
       try { rec.start(); }
-      catch (x) { reply(src, id, { t: 'error', code: 'service-not-allowed' }); finish(session); }
+      catch (x) { s.err = 'service-not-allowed'; cleanup(s); out.end('', s.err); }
     }
     run(0);
   }
 
   window.addEventListener('message', function (ev) {
     const d = ev.data;
-    if (!d || typeof d !== 'object' || !d.sahelMic || !ev.source || !isOurs(ev.source)) return;
-    if (d.t === 'start') start(ev.source, String(d.sahelMic));
-    else if (d.t === 'stop' && cur && cur.id === String(d.sahelMic)) { try { cur.rec.stop(); } catch (e) {} }
+    if (!d || typeof d !== 'object' || !ev.source || !isOurs(ev.source)) return;
+    if (d.sahelMic) {
+      const id = String(d.sahelMic);
+      if (d.t === 'start') begin(adapterA(ev.source, id), id, false);
+      else if (d.t === 'stop' && cur && cur.id === id) stopCur();
+    } else if (d.sahelCmd === 'voice') {
+      if (d.act === 'start') begin(adapterB(ev.source), 'B', !d.noLevel);
+      else if (d.act === 'stop') stopCur();
+    }
   });
 })();
 
