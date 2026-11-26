@@ -989,13 +989,15 @@ window.addEventListener('resize', closeAllPanels);
     clearTimeout(_titleTimer);
     if (_oldTitle !== null) { document.title = _oldTitle; _oldTitle = null; }
   }
-  function handleTitle(d) {
+  function handleTitle(ev, d) {
+    const reply = makeReply(ev, 'sahelHost', String((d && d.id) || ''));
     const t = d && d.title ? String(d.title).slice(0, 200) : '';
-    if (!t) { restoreTitle(); return; }
+    if (!t) { restoreTitle(); reply('ok'); return; }
     if (_oldTitle === null) _oldTitle = document.title;
     document.title = t;
     clearTimeout(_titleTimer);
     _titleTimer = setTimeout(restoreTitle, 120000);
+    reply('ok');   // تأیید برای اپ: عنوان نشست؛ حالا چاپ را شروع کن
   }
 
   function handlePrint(ev, d) {
@@ -1015,7 +1017,7 @@ window.addEventListener('resize', closeAllPanels);
     if (d.sahelCmd === 'share') handleFile(ev, d, 'share');
     else if (d.sahelCmd === 'save') handleFile(ev, d, 'save');
     else if (d.sahelCmd === 'print') handlePrint(ev, d);
-    else if (d.sahelCmd === 'title') handleTitle(d);
+    else if (d.sahelCmd === 'title') handleTitle(ev, d);
   });
 })();
 
