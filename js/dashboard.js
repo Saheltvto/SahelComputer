@@ -746,7 +746,24 @@ window.addEventListener('resize', closeAllPanels);
    ۱) {sahelMic:id, t:'start'|'stop'}            ← SahelAi.html
    ۲) {sahelCmd:'voice', act:'start'|'stop'}     ← App.html  (پاسخ: {sahelVoice2:{state:...}}) */
 (function () {
+  const SP = window.SahelPlatform || null;   // آداپتور پلتفرم (ویندوز/اندروید) — در نسخهٔ وب وجود ندارد
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+  // پیام کوچک پایین صفحه (برای حالت‌هایی که پلتفرم کاری را پشتیبانی نمی‌کند)
+  let toastEl = null, toastTm = 0;
+  function hostToast(msg) {
+    if (!toastEl) {
+      toastEl = document.createElement('div');
+      toastEl.style.cssText = 'position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:900;max-width:88vw;' +
+        'background:#0B3D42;color:#fff;padding:10px 18px;border-radius:16px;font:600 13px/1.7 Vazirmatn,Tahoma,sans-serif;' +
+        'box-shadow:0 8px 30px rgba(0,0,0,.28);text-align:center;opacity:0;pointer-events:none;transition:opacity .2s';
+      document.body.appendChild(toastEl);
+    }
+    toastEl.textContent = msg;
+    toastEl.style.opacity = '1';
+    clearTimeout(toastTm);
+    toastTm = setTimeout(() => { toastEl.style.opacity = '0'; }, 4200);
+  }
   const LANGS = ['fa-IR', 'fa', 'en-US'];
   let cur = null;
 
@@ -825,7 +842,39 @@ window.addEventListener('resize', closeAllPanels);
     } catch (e) {}
   }
 
+  // تشخیص گفتار بومی پلتفرم (مثلاً اندروید): SP.speech.start(opts, {onStart,onText,onEnd}) => Promise<{stop}>
+  function beginHost(out, id) {
+    if (cur) { const o = cur; o.silent = true; try { o.rec.abort(); } catch (e) {} cleanup(o); }
+    let h = null, stopReq = false;
+    const s = { id: id, out: out, last: '', fin: '', err: '', raf: 0, silent: false };
+    s.rec = {
+      stop() { stopReq = true; try { h && h.stop(); } catch (e) {} },
+      abort() { stopReq = true; try { h && h.stop(); } catch (e) {} }
+    };
+    cur = s;
+    out.ack();
+    const finish = (text, err) => {
+      if (s.silent || cur !== s) return;
+      const t = String(text || s.fin || s.last || '').trim();
+      cleanup(s);
+      out.end(t, err || '');
+    };
+    SP.speech.start({ lang: 'fa-IR' }, {
+      onStart() { if (!s.silent) out.start(); },
+      onText(t, fin) { if (s.silent) return; s.last = String(t || ''); if (fin) s.fin = s.last; out.text(s.last, !!fin); },
+      onEnd(text, err) { finish(text, err); }
+    }).then((hh) => { h = hh; if (stopReq) { try { h && h.stop(); } catch (e) {} } })
+      .catch((e) => finish('', (e && e.code) || 'service-not-allowed'));
+  }
+
   function begin(out, id, withLevel) {
+    if (SP && SP.speech === false) {              // این پلتفرم اصلاً گفتار ندارد (مثلاً ویندوز/Electron)
+      out.ack();
+      out.end('', 'host-unsupported');
+      try { SP.onSpeechUnsupported && SP.onSpeechUnsupported(); } catch (e) {}
+      return;
+    }
+    if (SP && SP.speech && SP.speech.start) { beginHost(out, id); return; }
     if (cur) { const o = cur; o.silent = true; try { o.rec.abort(); } catch (e) {} cleanup(o); }
     const s = { id: id, out: out, rec: null, last: '', fin: '', err: '', raf: 0, silent: false };
     cur = s;
@@ -885,30 +934,71 @@ window.addEventListener('resize', closeAllPanels);
     }
   });
 
-  /* ===== اشتراک‌گذاری فایل (Web Share) از صفحهٔ اصلی =====
-     Web Share داخل iframe اپ‌های Apps Script مجاز نیست؛ اپ فایل را با postMessage می‌فرستد
-     {sahelCmd:'share', id, buf:ArrayBuffer, name, type, title, text}
-     و جواب می‌گیرد {sahelShare:{id, state:'ack'|'ok'|'cancel'|'unsupported'|'error'}}.
-     کلیک کاربر داخل iframe به صفحهٔ اصلی هم «کنش کاربر» می‌دهد، پس share همین‌جا کار می‌کند. */
-  window.addEventListener('message', async function (ev) {
-    const d = ev.data;
-    if (!d || typeof d !== 'object' || d.sahelCmd !== 'share' || !ev.source || !isOurs(ev.source)) return;
-    const id = String(d.id || '');
-    const reply = (state, extra) => {
-      try { ev.source.postMessage({ sahelShare: Object.assign({ id: id, state: state }, extra || {}) }, '*'); } catch (e) {}
+  /* ===== فرمان‌های فایل و چاپ از اپ‌ها =====
+     {sahelCmd:'share'|'save', id, buf:ArrayBuffer, name, type, title, text}  ← جواب: {sahelShare|sahelHost:{id,state}}
+     {sahelCmd:'print', id}                                                  ← جواب: state = 'passthrough' | 'blocked'
+     state ها: ack | ok | cancel | unsupported | error | passthrough | blocked
+     Web Share و دانلود blob داخل iframe اپ‌های Apps Script کار نمی‌کند؛ این‌جا (صفحهٔ اصلی) انجام می‌شود.
+     کلیک کاربر داخل iframe به صفحهٔ اصلی هم «کنش کاربر» می‌دهد، پس share همین‌جا مجاز است.
+     اگر آداپتور پلتفرم (SahelPlatform) باشد، ذخیره/اشتراک بومی همان پلتفرم استفاده می‌شود. */
+  function makeReply(ev, key, id) {
+    return (state, extra) => {
+      try { ev.source.postMessage({ [key]: Object.assign({ id: id, state: state }, extra || {}) }, '*'); } catch (e) {}
     };
+  }
+
+  async function handleFile(ev, d, mode) {
+    const id = String(d.id || '');
+    const reply = makeReply(ev, mode === 'share' ? 'sahelShare' : 'sahelHost', id);
     reply('ack');
     try {
-      const data = {};
-      if (d.buf) data.files = [new File([d.buf], String(d.name || 'file'), { type: String(d.type || 'application/octet-stream') })];
-      if (d.title) data.title = String(d.title);
-      if (d.text) data.text = String(d.text);
-      if (!navigator.share || (data.files && !(navigator.canShare && navigator.canShare(data)))) { reply('unsupported'); return; }
-      await navigator.share(data);
+      const name = String(d.name || 'file');
+      const type = String(d.type || 'application/octet-stream');
+      const meta = { mode: mode, title: d.title ? String(d.title) : '', text: d.text ? String(d.text) : '' };
+      // ۱) آداپتور بومی پلتفرم
+      if (SP && d.buf && SP.saveFile) { reply(String(await SP.saveFile({ name: name, type: type, buf: d.buf }, meta) || 'ok')); return; }
+      if (SP && !d.buf && SP.shareText && mode === 'share') { reply(String(await SP.shareText(meta) || 'ok')); return; }
+      // ۲) وب: اشتراک‌گذاری
+      if (mode === 'share') {
+        const data = {};
+        if (d.buf) data.files = [new File([d.buf], name, { type: type })];
+        if (meta.title) data.title = meta.title;
+        if (meta.text) data.text = meta.text;
+        if (!navigator.share || (data.files && !(navigator.canShare && navigator.canShare(data)))) { reply('unsupported'); return; }
+        await navigator.share(data);
+        reply('ok');
+        return;
+      }
+      // ۳) وب: ذخیره (دانلود در صفحهٔ اصلی)
+      if (!d.buf) { reply('error', { msg: 'nofile' }); return; }
+      const url = URL.createObjectURL(new Blob([d.buf], { type: type }));
+      const a = document.createElement('a');
+      a.href = url; a.download = name; a.style.display = 'none';
+      document.body.appendChild(a); a.click();
+      setTimeout(() => { a.remove(); URL.revokeObjectURL(url); }, 4000);
       reply('ok');
     } catch (e) {
-      reply(e && e.name === 'AbortError' ? 'cancel' : 'error', { msg: String((e && e.name) || '') });
+      reply(e && e.name === 'AbortError' ? 'cancel' : 'error', { msg: String((e && (e.name || e.message)) || '') });
     }
+  }
+
+  function handlePrint(ev, d) {
+    const reply = makeReply(ev, 'sahelHost', String(d.id || ''));
+    reply('ack');
+    if (SP && SP.print === 'blocked') {
+      hostToast(SP.printMsg || 'چاپ مستقیم در این نسخه ممکن نیست؛ از «ذخیره PDF» یا «اشتراک‌گذاری» استفاده کن.');
+      reply('blocked');
+    } else {
+      reply('passthrough');     // خود اپ window.print() را صدا می‌زند
+    }
+  }
+
+  window.addEventListener('message', function (ev) {
+    const d = ev.data;
+    if (!d || typeof d !== 'object' || !ev.source || !d.sahelCmd || !isOurs(ev.source)) return;
+    if (d.sahelCmd === 'share') handleFile(ev, d, 'share');
+    else if (d.sahelCmd === 'save') handleFile(ev, d, 'save');
+    else if (d.sahelCmd === 'print') handlePrint(ev, d);
   });
 })();
 
