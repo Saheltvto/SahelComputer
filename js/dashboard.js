@@ -430,6 +430,52 @@ function renderFiles(files) {
   `).join('');
 }
 
+/* ===== نمایش فایل دریافتی داخل خود برنامه (با دکمهٔ بازگشت و پشتیبانی از «برگشت» گوشی) =====
+   قبلاً فایل در همان پنجره/تب بیرونی باز می‌شد و در موبایل راه برگشت به برنامه نبود. */
+let _fvEl = null, _fvOpen = false;
+function fileViewerEl() {
+  if (_fvEl) return _fvEl;
+  const st = document.createElement('style');
+  st.textContent = '#fileViewer{position:fixed;inset:0;z-index:100000;display:none;flex-direction:column;background:#0b1220;direction:rtl}'
+    + '#fileViewer .fv-bar{display:flex;align-items:center;gap:8px;padding:calc(env(safe-area-inset-top,0px) + 8px) 10px 8px;background:#0f1b2d;color:#fff;border-bottom:1px solid rgba(255,255,255,.12)}'
+    + '#fileViewer .fv-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px;font-weight:700}'
+    + '#fileViewer button{font:inherit;font-size:13px;font-weight:700;color:#fff;background:rgba(255,255,255,.14);border:0;border-radius:10px;padding:9px 14px;cursor:pointer;white-space:nowrap}'
+    + '#fileViewer button:active{background:rgba(255,255,255,.28)}'
+    + '#fileViewer iframe{flex:1;width:100%;border:0;background:#fff}';
+  document.head.appendChild(st);
+  _fvEl = document.createElement('div');
+  _fvEl.id = 'fileViewer';
+  _fvEl.innerHTML = '<div class="fv-bar"><button type="button" class="fv-back">→ بازگشت</button><span class="fv-name"></span><button type="button" class="fv-ext">باز کردن در مرورگر</button></div><iframe allow="fullscreen" referrerpolicy="no-referrer"></iframe>';
+  document.body.appendChild(_fvEl);
+  _fvEl.querySelector('.fv-back').addEventListener('click', () => closeFileViewer());
+  return _fvEl;
+}
+function closeFileViewer(fromPop) {
+  if (!_fvOpen) return;
+  _fvOpen = false;
+  _fvEl.style.display = 'none';
+  _fvEl.querySelector('iframe').src = 'about:blank';
+  if (!fromPop && history.state && history.state.sahelViewer) history.back();
+}
+function openFileViewer(url, name) {
+  const el = fileViewerEl();
+  const m = String(url).match(/drive\.google\.com\/(?:file\/d\/|open\?id=|uc\?(?:[^#]*&)?id=)([\w-]+)/);
+  const src = m ? 'https://drive.google.com/file/d/' + m[1] + '/preview' : url;
+  el.querySelector('.fv-name').textContent = name || 'فایل';
+  el.querySelector('.fv-ext').onclick = () => { window.open(url, '_blank', 'noopener'); };
+  el.querySelector('iframe').src = src;
+  closeAllPanels();
+  el.style.display = 'flex';
+  if (!_fvOpen) { _fvOpen = true; try { history.pushState({ sahelViewer: 1 }, ''); } catch (e) {} }
+}
+window.addEventListener('popstate', () => closeFileViewer(true));
+document.getElementById('fileList')?.addEventListener('click', (e) => {
+  const a = e.target.closest && e.target.closest('a.file-item');
+  if (!a) return;
+  e.preventDefault(); e.stopPropagation();
+  openFileViewer(a.getAttribute('href'), (a.querySelector('b') || {}).textContent);
+});
+
 function displayRates(rates) {
   if (!rates) return;
   if (rates.USD)  document.getElementById('tiUsd').innerHTML  = `<span class="rate-label">دلار</span> <span class="rate-value">${formatNumber(rates.USD)}</span>`;
@@ -737,7 +783,14 @@ window.addEventListener('blur', () => {
     if (a && a.tagName === 'IFRAME') closeAllPanels();
   }, 0);
 });
-window.addEventListener('resize', closeAllPanels);
+/* در موبایل با باز شدن کیبورد ارتفاع صفحه تغییر می‌کند و رویداد resize می‌آید؛ نباید پنل (مثلاً پیام) بسته شود. فقط تغییر عرض (چرخش/تغییر اندازه) پنل‌ها را می‌بندد */
+let _lastW = window.innerWidth;
+window.addEventListener('resize', () => {
+  const w = window.innerWidth;
+  if (w === _lastW) return;
+  _lastW = w;
+  closeAllPanels();
+});
 
 /* ===== پل میکروفون برای اپ‌های Apps Script داخل iframe =====
    گوگل به قاب داخلی Apps Script اجازهٔ میکروفون نمی‌دهد؛ پس تشخیص گفتار اینجا
