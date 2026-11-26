@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>کارتابل ساحل</title>
+<style>
+  body{font-family:sans-serif;display:grid;place-items:center;height:100vh;margin:0;background:#0B3D42;color:#fff;text-align:center}
+</style>
+</head>
+<body>
+<div id="msg">در حال اتصال...</div>
+<script>
+// آدرس‌های آینه — بعد از ساخت هر آینه، آدرس واقعی را جایگزین کنید
+const MIRRORS = [
+  'https://saheltvto.github.io/SahelComputer/login.html',
+  'https://sahelcomputer.bmichale22.workers.dev/login',
+  'https://saheltvto.gitlab.io/SahelComputer/login.html'
+];
+
+function ping(url, ms = 4000) {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), ms);
+  return fetch(url, { mode: 'no-cors', cache: 'no-store', signal: ctrl.signal })
+    .then(() => { clearTimeout(t); return url; });
+}
+
+(async () => {
+  let last = null;
+  try { last = localStorage.getItem('lastOk'); } catch (e) {}
+  const list = last ? [last, ...MIRRORS.filter(u => u !== last)] : MIRRORS;
+  try {
+    const ok = await Promise.any(list.map(u => ping(u)));
+    try { localStorage.setItem('lastOk', ok); } catch (e) {}
+    location.replace(ok);
+  } catch (e) {
+    document.getElementById('msg').textContent = 'هیچ آدرسی در دسترس نیست. اینترنت را بررسی کنید.';
+  }
+})();
+</script>
+</body>
+</html>
