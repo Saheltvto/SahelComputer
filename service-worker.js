@@ -1,6 +1,6 @@
 // ===== سرویس‌ورکر ساحل — کش کامل آفلاین (نسخهٔ ۴) =====
 // استراتژی: اول کش (فوری، حتی وقتی گیت‌هاب فیلتر است) + به‌روزرسانی در پس‌زمینه
-const CACHE_NAME = 'sahel-dashboard-shell-v14';
+const CACHE_NAME = 'sahel-dashboard-shell-v15';
 const SHELL_FILES = [
   './',
   './index.html',
