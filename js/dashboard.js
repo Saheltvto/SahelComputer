@@ -720,6 +720,9 @@ document.getElementById('appSwitch')?.addEventListener('click', (e) => {
 });
 
 document.getElementById('appMenu')?.addEventListener('click', (e) => e.stopPropagation());
+// کلیک داخل کارت پروفایل آن را نمی‌بندد؛ فقط ضربدر، کلیک بیرون از کارت یا Esc
+document.getElementById('userDropdown')?.addEventListener('click', (e) => e.stopPropagation());
+document.getElementById('pcClose')?.addEventListener('click', (e) => { e.stopPropagation(); closeAllPanels(); });
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeAllPanels(); });
 
 document.getElementById('logoutBtn')?.addEventListener('click', () => {
@@ -727,6 +730,13 @@ document.getElementById('logoutBtn')?.addEventListener('click', () => {
 });
 
 document.addEventListener('click', closeAllPanels);
+// کلیک/لمس داخل اپ (iframe) به صفحه‌ی اصلی نمی‌رسد؛ ولی فوکوس از صفحه‌ی اصلی به iframe می‌رود => پنل‌ها بسته شوند
+window.addEventListener('blur', () => {
+  setTimeout(() => {
+    const a = document.activeElement;
+    if (a && a.tagName === 'IFRAME') closeAllPanels();
+  }, 0);
+});
 window.addEventListener('resize', closeAllPanels);
 
 /* ===== پل میکروفون برای اپ‌های Apps Script داخل iframe =====
