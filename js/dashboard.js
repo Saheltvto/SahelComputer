@@ -884,6 +884,32 @@ window.addEventListener('resize', closeAllPanels);
       else if (d.act === 'stop') stopCur();
     }
   });
+
+  /* ===== اشتراک‌گذاری فایل (Web Share) از صفحهٔ اصلی =====
+     Web Share داخل iframe اپ‌های Apps Script مجاز نیست؛ اپ فایل را با postMessage می‌فرستد
+     {sahelCmd:'share', id, buf:ArrayBuffer, name, type, title, text}
+     و جواب می‌گیرد {sahelShare:{id, state:'ack'|'ok'|'cancel'|'unsupported'|'error'}}.
+     کلیک کاربر داخل iframe به صفحهٔ اصلی هم «کنش کاربر» می‌دهد، پس share همین‌جا کار می‌کند. */
+  window.addEventListener('message', async function (ev) {
+    const d = ev.data;
+    if (!d || typeof d !== 'object' || d.sahelCmd !== 'share' || !ev.source || !isOurs(ev.source)) return;
+    const id = String(d.id || '');
+    const reply = (state, extra) => {
+      try { ev.source.postMessage({ sahelShare: Object.assign({ id: id, state: state }, extra || {}) }, '*'); } catch (e) {}
+    };
+    reply('ack');
+    try {
+      const data = {};
+      if (d.buf) data.files = [new File([d.buf], String(d.name || 'file'), { type: String(d.type || 'application/octet-stream') })];
+      if (d.title) data.title = String(d.title);
+      if (d.text) data.text = String(d.text);
+      if (!navigator.share || (data.files && !(navigator.canShare && navigator.canShare(data)))) { reply('unsupported'); return; }
+      await navigator.share(data);
+      reply('ok');
+    } catch (e) {
+      reply(e && e.name === 'AbortError' ? 'cancel' : 'error', { msg: String((e && e.name) || '') });
+    }
+  });
 })();
 
 start();
