@@ -1527,27 +1527,31 @@
 
     /* دستگیره‌ی همیشه‌دیدنی: زیر نوارها (وقتی نمایش‌اند) یا بالای صفحه (وقتی مخفی‌اند)
        چون اپ داخل iframe است و لمس داخل آن به صفحه‌ی اصلی نمی‌رسد */
+    /* دستگیرهٔ مخفی/نمایش: فقط یک خط ریز و کم‌رنگ؛ سطح لمس نامرئی ولی بزرگ‌تر از خط است */
     #chromeHandle {
-      display: flex; align-items: center; justify-content: center;
+      display: block;
       position: fixed;
       top: calc(env(safe-area-inset-top, 0px) + var(--chrome-total, 0px));
-      left: 50%; width: 64px; height: 22px; margin-left: -32px;
+      left: 50%; width: 76px; height: 24px; margin-left: -38px;
       z-index: 140; touch-action: none;
-      border-radius: 0 0 14px 14px;
-      color: var(--teal);
-      background: var(--glass-bg-strong);
-      border: 1px solid var(--glass-border); border-top: 0;
-      box-shadow: 0 4px 10px rgba(11, 61, 66, 0.12);
-      opacity: 0.8;
+      background: transparent; border: 0;
       -webkit-tap-highlight-color: transparent;
-      transition: top 0.32s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease;
+      transition: top 0.32s cubic-bezier(0.4, 0, 0.2, 1);
     }
-    #chromeHandle::before { content: ''; position: absolute; inset: -6px -16px -12px; }  /* سطح لمس بزرگ‌تر از ظاهر */
-    #chromeHandle svg { width: 18px; height: 18px; transition: transform 0.3s ease; }
-    #chromeHandle:active { opacity: 1; }
-    body.chrome-hidden #chromeHandle { top: env(safe-area-inset-top, 0px); opacity: 0.55; }
-    body.chrome-hidden #chromeHandle svg { transform: rotate(180deg); }
-    :root[data-theme="dark"] #chromeHandle { color: var(--accent-light); }
+    #chromeHandle::after {
+      content: ''; position: absolute; top: 4px; left: 50%;
+      width: 26px; height: 3px; margin-left: -13px; border-radius: 3px;
+      background: var(--teal); opacity: 0.28;
+      transition: width 0.22s ease, height 0.22s ease, margin-left 0.22s ease, opacity 0.2s ease, box-shadow 0.22s ease, background 0.2s ease;
+    }
+    :root[data-theme="dark"] #chromeHandle::after { background: var(--accent); opacity: 0.4; }  /* روی هر دو پس‌زمینهٔ روشن و تیره دیده شود */
+    /* واکنش به لمس: خط کمی بزرگ‌تر، پررنگ و درخشان می‌شود */
+    #chromeHandle:active::after {
+      width: 46px; height: 5px; margin-left: -23px; opacity: 1;
+      background: var(--accent);
+      box-shadow: 0 0 0 5px rgba(47, 184, 166, 0.18), 0 0 14px rgba(47, 184, 166, 0.55);
+    }
+    body.chrome-hidden #chromeHandle { top: env(safe-area-inset-top, 0px); }
   }
 </style>
 </head>
@@ -1556,7 +1560,7 @@
 <div class="app-shell">
 
   <!-- دستگیره‌ی نمایش نوارها (فقط موبایل، وقتی نوارها مخفی‌اند) -->
-  <div id="chromeHandle" aria-label="مخفی یا نمایش نوار بالا" role="button"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 15L12 9L18 15" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+  <div id="chromeHandle" aria-label="مخفی یا نمایش نوار بالا" role="button"></div>
 
   <div class="main-col">
     <div class="topbar">
