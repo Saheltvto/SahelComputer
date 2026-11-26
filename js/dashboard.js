@@ -36,35 +36,36 @@ function roleLabel(role, jobTitle) {
 
 /* ===== عکس پرسنلی (آواتار) ===== */
 // هر آدرس عکس: لینک گوگل درایو (هر شکلی)، فقط ID فایل درایو، یا لینک مستقیم تصویر
-function sahelPhotoUrl(raw) {
+function sahelPhotoUrl(raw, size) {
+  const W = '=w' + (size || 200);
   if (!raw) return '';
   raw = String(raw).trim();
   if (!raw) return '';
   if (/drive\.google\.com|docs\.google\.com/i.test(raw)) {
     const m = raw.match(/\/d\/([a-zA-Z0-9_-]{20,})/) || raw.match(/[?&]id=([a-zA-Z0-9_-]{20,})/);
-    if (m) return 'https://lh3.googleusercontent.com/d/' + m[1] + '=w200';
+    if (m) return 'https://lh3.googleusercontent.com/d/' + m[1] + W;
   }
   if (/^[a-zA-Z0-9_-]{25,}$/.test(raw)) {
-    return 'https://lh3.googleusercontent.com/d/' + raw + '=w200';
+    return 'https://lh3.googleusercontent.com/d/' + raw + W;
   }
   if (/^(https?:\/\/|data:image\/)/i.test(raw)) return raw.replace(/"/g, '%22');
   return '';
 }
 
 // اگر عکس نبود یا لود نشد، همان حروف اول نام نمایش داده می‌شود
-function avatarHtml(photo, text) {
-  const url = sahelPhotoUrl(photo);
+function avatarHtml(photo, text, size) {
+  const url = sahelPhotoUrl(photo, size);
   // اگر آدرس اصلی لود نشد، یک بار آدرس جایگزین درایو را امتحان می‌کند؛ بعد حروف اول می‌ماند
   const m = url.match(/lh3\.googleusercontent\.com\/d\/([a-zA-Z0-9_-]+)/);
-  const fb = m ? 'https://drive.google.com/thumbnail?id=' + m[1] + '&sz=w200' : '';
+  const fb = m ? 'https://drive.google.com/thumbnail?id=' + m[1] + '&sz=w' + (size || 200) : '';
   const img = url
     ? `<img class="avatar-img" src="${url}" data-fb="${fb}" alt="" referrerpolicy="no-referrer" onerror="if(this.dataset.fb){this.src=this.dataset.fb;this.dataset.fb='';}else{this.remove();}">`
     : '';
   return `<span class="avatar-txt">${text}</span>${img}`;
 }
 
-function setAvatar(el, photo, text) {
-  if (el) el.innerHTML = avatarHtml(photo, text);
+function setAvatar(el, photo, text, size) {
+  if (el) el.innerHTML = avatarHtml(photo, text, size);
 }
 
 /* ===== توابع کمکی ===== */
@@ -81,9 +82,11 @@ function positionPanel(panel, trigger) {
 }
 
 function closeAllPanels() {
-  document.querySelectorAll('.user-dropdown, .file-panel, .members-panel, .chat-panel').forEach(p => {
+  document.querySelectorAll('.user-dropdown, .file-panel, .members-panel, .chat-panel, .app-menu').forEach(p => {
     p.style.display = 'none';
   });
+  const sw = document.getElementById('appSwitch');
+  if (sw) sw.setAttribute('aria-expanded', 'false');
 }
 
 function formatNumber(num) {
@@ -163,23 +166,37 @@ function getAppFrame(url) {
 function showApp(url) {
   const frame = getAppFrame(url);
   Object.keys(wsFrames).forEach(u => { wsFrames[u].style.display = wsFrames[u] === frame ? 'block' : 'none'; });
-  appTabsEl.querySelectorAll('.app-tab').forEach(t => t.setAttribute('aria-selected', String(t.dataset.url === url)));
+  const nameEl = document.getElementById('appSwitchName');
+  document.querySelectorAll('#appMenu .app-menu-item').forEach(t => {
+    const on = t.dataset.url === url;
+    t.setAttribute('aria-selected', String(on));
+    if (on && nameEl) nameEl.textContent = t.querySelector('.am-title').textContent;
+  });
   try { sessionStorage.setItem('sahel_last_app', url); } catch (e) {}
 }
 
+// به‌جای نوار تب زیر نوار بالا، یک کپسول کوچک در نوار بالا + منوی بازشو
 function renderAppTabs(apps) {
-  if (apps.length < 2) { appTabsEl.hidden = true; appTabsEl.innerHTML = ''; return; }
-  appTabsEl.hidden = false;
-  appTabsEl.innerHTML = '';
+  const sw = document.getElementById('appSwitch');
+  const menu = document.getElementById('appMenu');
+  appTabsEl.hidden = true; appTabsEl.innerHTML = '';
+  if (menu) { menu.innerHTML = ''; menu.style.display = 'none'; }
+  if (!sw || !menu) return;
+  if (apps.length < 2) { sw.hidden = true; return; }
+  sw.hidden = false;
   apps.forEach(a => {
     const b = document.createElement('button');
     b.type = 'button';
-    b.className = 'app-tab';
+    b.className = 'app-menu-item';
     b.dataset.url = a.url;
-    b.setAttribute('role', 'tab');
-    b.textContent = a.title;
-    b.addEventListener('click', () => showApp(a.url));
-    appTabsEl.appendChild(b);
+    b.setAttribute('role', 'option');
+    const t = document.createElement('span');
+    t.className = 'am-title';
+    t.textContent = a.title;
+    b.appendChild(t);
+    b.insertAdjacentHTML('beforeend', '<svg class="am-check" viewBox="0 0 24 24" fill="none"><path d="M5 12.5L10 17.5L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>');
+    b.addEventListener('click', () => { showApp(a.url); closeAllPanels(); });
+    menu.appendChild(b);
   });
 }
 
@@ -650,16 +667,44 @@ document.getElementById('chatBtn')?.addEventListener('click', (e) => {
 
 document.getElementById('chatPanel')?.addEventListener('click', (e) => e.stopPropagation());
 
+// کارت پروفایل: همیشه اطلاعات کاربر واردشده (نه عضوی که کارتابلش دیده می‌شود)
+function fillProfileCard() {
+  if (!sahelUser) return;
+  setAvatar(document.getElementById('pcAvatar'), sahelUser.photo, sahelUser.initials || String(sahelUser.name || '').slice(0, 2), 400);
+  document.getElementById('pcName').textContent = sahelUser.name || '';
+  document.getElementById('pcRole').textContent = roleLabel(sahelUser.role, sahelUser.jobTitle);
+}
+
 document.getElementById('topbarUser')?.addEventListener('click', (e) => {
   e.stopPropagation();
   const panel = document.getElementById('userDropdown');
   const isOpen = panel.style.display === 'block';
   closeAllPanels();
   if (!isOpen) {
-    positionPanel(panel, e.currentTarget);
+    fillProfileCard();
     panel.style.display = 'block';
   }
 });
+
+document.getElementById('appSwitch')?.addEventListener('click', (e) => {
+  e.stopPropagation();
+  const menu = document.getElementById('appMenu');
+  const btn = e.currentTarget;
+  const isOpen = menu.style.display === 'flex';
+  closeAllPanels();
+  if (!isOpen) {
+    const r = btn.getBoundingClientRect();
+    const w = Math.min(220, window.innerWidth - 20);
+    menu.style.top = (r.bottom + 8) + 'px';
+    menu.style.left = 'auto';
+    menu.style.right = Math.min(Math.max(10, window.innerWidth - r.right), window.innerWidth - 10 - w) + 'px';
+    menu.style.display = 'flex';
+    btn.setAttribute('aria-expanded', 'true');
+  }
+});
+
+document.getElementById('appMenu')?.addEventListener('click', (e) => e.stopPropagation());
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeAllPanels(); });
 
 document.getElementById('logoutBtn')?.addEventListener('click', () => {
   sessionStorage.removeItem('sahel_user');
