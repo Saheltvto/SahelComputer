@@ -982,6 +982,22 @@ window.addEventListener('resize', closeAllPanels);
     }
   }
 
+  /* عنوان گزارش برای نام فایل PDF: مرورگر هنگام «Save as PDF» نام فایل را از عنوان همین صفحهٔ اصلی می‌گیرد.
+     {sahelCmd:'title', title:'…'} ← عنوان موقت تا پایان چاپ؛ title خالی = برگرداندن عنوان قبلی (برای اطمینان بعد از ۲ دقیقه هم خودکار برمی‌گردد) */
+  let _oldTitle = null, _titleTimer = null;
+  function restoreTitle() {
+    clearTimeout(_titleTimer);
+    if (_oldTitle !== null) { document.title = _oldTitle; _oldTitle = null; }
+  }
+  function handleTitle(d) {
+    const t = d && d.title ? String(d.title).slice(0, 200) : '';
+    if (!t) { restoreTitle(); return; }
+    if (_oldTitle === null) _oldTitle = document.title;
+    document.title = t;
+    clearTimeout(_titleTimer);
+    _titleTimer = setTimeout(restoreTitle, 120000);
+  }
+
   function handlePrint(ev, d) {
     const reply = makeReply(ev, 'sahelHost', String(d.id || ''));
     reply('ack');
@@ -999,6 +1015,7 @@ window.addEventListener('resize', closeAllPanels);
     if (d.sahelCmd === 'share') handleFile(ev, d, 'share');
     else if (d.sahelCmd === 'save') handleFile(ev, d, 'save');
     else if (d.sahelCmd === 'print') handlePrint(ev, d);
+    else if (d.sahelCmd === 'title') handleTitle(d);
   });
 })();
 
