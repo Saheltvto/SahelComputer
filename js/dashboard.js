@@ -48,6 +48,8 @@ function sahelPhotoUrl(raw, size) {
   if (/^[a-zA-Z0-9_-]{25,}$/.test(raw)) {
     return 'https://lh3.googleusercontent.com/d/' + raw + W;
   }
+  const lm = raw.match(/^https:\/\/lh3\.googleusercontent\.com\/d\/([a-zA-Z0-9_-]+)/);
+  if (lm) return 'https://lh3.googleusercontent.com/d/' + lm[1] + W;
   if (/^(https?:\/\/|data:image\/)/i.test(raw)) return raw.replace(/"/g, '%22');
   return '';
 }
@@ -364,7 +366,7 @@ function applyBootstrapData(data) {
 function renderMembers(workspaces) {
   const membersList = document.getElementById('membersList');
   membersList.innerHTML = workspaces.map(w => `
-    <div class="member-row" data-id="${escAttr(w.id)}" data-url="${escAttr(w.appUrl)}" data-name="${escAttr(w.name)}" data-photo="${escAttr(sahelPhotoUrl(w.photo))}" data-role="${escAttr(w.role || '')}" data-jobtitle="${escAttr(w.jobTitle || '')}">
+    <div class="member-row" data-id="${escAttr(w.id)}" data-url="${escAttr(w.appUrl)}" data-name="${escAttr(w.name)}" data-initials="${escAttr(w.initials || '')}" data-photo="${escAttr(sahelPhotoUrl(w.photo))}" data-role="${escAttr(w.role || '')}" data-jobtitle="${escAttr(w.jobTitle || '')}">
       <div class="member-avatar">${avatarHtml(w.photo, w.initials || w.name.slice(0, 2))}</div>
       <div class="member-info">
         <b>${escHtml(w.name)}${String(w.id) === String(sahelUser.id) ? ' (شما)' : ''}</b>
@@ -383,6 +385,7 @@ function renderMembers(workspaces) {
         id: row.dataset.id,
         url: row.dataset.url,
         name: row.dataset.name,
+        initials: row.dataset.initials,
         photo: row.dataset.photo,
         role: row.dataset.role,
         jobTitle: row.dataset.jobtitle
@@ -393,15 +396,22 @@ function renderMembers(workspaces) {
   });
 }
 
+// پروفایلی که الان کارتابلش دیده می‌شود (برای کارت پروفایل)
+let viewedProfile = null;
+
 function setActiveMember(member) {
   activeMemberId = String(member.id);
+  viewedProfile = {
+    id: String(member.id), name: member.name, photo: member.photo, role: member.role,
+    jobTitle: member.jobTitle, initials: member.initials || String(member.name || '').slice(0, 2)
+  };
   document.querySelectorAll('.member-row').forEach(r => {
     r.classList.toggle('active', r.dataset.id === activeMemberId);
   });
   openWorkspace(member.url);
   document.getElementById('topbarName').textContent = member.name;
   document.getElementById('topbarRole').textContent = roleLabel(member.role, member.jobTitle);
-  setAvatar(document.getElementById('topbarAvatar'), member.photo, member.name.slice(0, 2));
+  setAvatar(document.getElementById('topbarAvatar'), member.photo, viewedProfile.initials);
 }
 
 function renderFiles(files) {
@@ -667,12 +677,18 @@ document.getElementById('chatBtn')?.addEventListener('click', (e) => {
 
 document.getElementById('chatPanel')?.addEventListener('click', (e) => e.stopPropagation());
 
-// کارت پروفایل: همیشه اطلاعات کاربر واردشده (نه عضوی که کارتابلش دیده می‌شود)
+// کارت پروفایل: اطلاعات همان کارتابلی که الان باز است (مدیر وقتی روی کارتابل عضو است، پروفایل همان عضو را می‌بیند)
 function fillProfileCard() {
   if (!sahelUser) return;
-  setAvatar(document.getElementById('pcAvatar'), sahelUser.photo, sahelUser.initials || String(sahelUser.name || '').slice(0, 2), 400);
-  document.getElementById('pcName').textContent = sahelUser.name || '';
-  document.getElementById('pcRole').textContent = roleLabel(sahelUser.role, sahelUser.jobTitle);
+  const own = !viewedProfile || String(viewedProfile.id) === String(sahelUser.id);
+  const p = own
+    ? { name: sahelUser.name, photo: sahelUser.photo, role: sahelUser.role, jobTitle: sahelUser.jobTitle, initials: sahelUser.initials }
+    : viewedProfile;
+  setAvatar(document.getElementById('pcAvatar'), p.photo, p.initials || String(p.name || '').slice(0, 2), 400);
+  document.getElementById('pcName').textContent = p.name || '';
+  document.getElementById('pcRole').textContent = roleLabel(p.role, p.jobTitle);
+  const lo = document.getElementById('pcLogoutText');
+  if (lo) lo.textContent = own ? 'خروج از حساب' : 'خروج از حساب خودم';
 }
 
 document.getElementById('topbarUser')?.addEventListener('click', (e) => {
