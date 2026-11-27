@@ -28,7 +28,7 @@ jobs:
 
       - name: Copy website files into the app
         run: |
-          A=android/app/src/main/assets
+          A=app/src/main/assets
           rm -rf "$A"
           mkdir -p "$A"
           cp login.html dashboard.html manifest.json "$A"/
@@ -52,13 +52,12 @@ jobs:
           gradle-version: 8.9
 
       - name: Build release APK
-        working-directory: android
         run: gradle --no-daemon assembleRelease
 
       - name: Rename APK
         run: |
           mkdir -p out
-          cp android/app/build/outputs/apk/release/app-release.apk out/SahelStudio.apk
+                    cp app/build/outputs/apk/release/app-release.apk out/SahelStudio.apk
 
       - name: Upload APK (Artifacts)
         uses: actions/upload-artifact@v4
