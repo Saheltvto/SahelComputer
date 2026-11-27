@@ -175,11 +175,14 @@ public class MainActivity extends Activity {
             return true;
         }
         if (HOST.equalsIgnoreCase(u.getHost())) {
-            if (isMain) {
+                   if (isMain) {
                 String p = u.getPath();
-                if (p == null || p.equals("/") || p.endsWith("/index.html") || p.endsWith("/go.html")
-                        || p.startsWith("/articles")) {
-                    webView.loadUrl(START_URL); // برنامه فقط کارتابل است، نه سایت معرفی
+                if (p != null && p.endsWith("/index.html")) {
+                    openExternal(Uri.parse(SITE_URL)); // لوگوی ساحل ← وب‌سایت ساحل
+                    return true;
+                }
+                if (p == null || p.equals("/") || p.endsWith("/go.html") || p.startsWith("/articles")) {
+                    webView.loadUrl(START_URL);
                     return true;
                 }
             }
