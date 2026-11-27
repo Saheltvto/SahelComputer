@@ -48,6 +48,7 @@ public class MainActivity extends Activity {
     static final String HOST = "appassets.androidplatform.net";
     static final String ORIGIN = "https://" + HOST;
     static final String START_URL = ORIGIN + "/dashboard.html";
+        static final String SITE_URL = "https://saheltvto.github.io/SahelComputer/";
     private static final int REQ_FILE = 11;
 
     /** وقتی برنامه روی صفحه است، اعلان پس‌زمینه نشان داده نمی‌شود */
