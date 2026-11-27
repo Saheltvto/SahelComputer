@@ -1,0 +1,52 @@
+plugins {
+    id 'com.android.application'
+}
+
+// شمارهٔ نسخه: با هر اجرای workflow در گیت‌هاب خودکار بالا می‌رود تا نصب روی نسخهٔ قبلی ممکن باشد
+def runNumber = (System.getenv("GITHUB_RUN_NUMBER") ?: "1").toInteger()
+
+android {
+    namespace 'ir.sahelcomputer.studio'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId 'ir.sahelcomputer.studio'
+        minSdk 26
+        targetSdk 34
+        versionCode runNumber
+        versionName "1.0.${runNumber}"
+    }
+
+    signingConfigs {
+        release {
+            // اگر در Secrets گیت‌هاب کلید اختصاصی تعریف شده باشد از همان استفاده می‌شود،
+            // وگرنه از کلید همراه پروژه (android/keystore/sahel-studio.jks)
+            storeFile file(System.getenv("SAHEL_KEYSTORE") ?: "../keystore/sahel-studio.jks")
+            storePassword System.getenv("SAHEL_KEYSTORE_PASSWORD") ?: "sahelstudio"
+            keyAlias System.getenv("SAHEL_KEY_ALIAS") ?: "sahelstudio"
+            keyPassword System.getenv("SAHEL_KEY_PASSWORD") ?: "sahelstudio"
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            signingConfig signingConfigs.release
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    lint {
+        abortOnError false
+        checkReleaseBuilds false
+    }
+}
+
+dependencies {
+    implementation 'androidx.webkit:webkit:1.11.0'
+    implementation 'androidx.core:core:1.13.1'
+}

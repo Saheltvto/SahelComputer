@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">استودیو ساحل</string>
+    <string name="channel_name">پیام‌ها و فایل‌ها</string>
+    <string name="channel_desc">اعلان پیام و فایل جدید در کارتابل</string>
+</resources>
