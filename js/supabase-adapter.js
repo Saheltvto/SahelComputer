@@ -120,38 +120,100 @@
     });
   }
 
+
+  // ---------- لحظه‌ای (Supabase Realtime) ----------
+  // اگر جدول‌ها در publication فعال باشند، پیام‌ها بدون تأخیر می‌رسند؛ در غیر این صورت پیام‌رسان با polling کار می‌کند.
+  // فعال‌سازی (یک بار در SQL Editor):  alter publication supabase_realtime add table kt_messages, kt_files;
+  var rt = { ws: null, ref: 0, hb: null, ok: false, events: 0, tries: 0, timer: null, tk: '', on: false, fns: [] };
+  function rtEmit(o) { rt.fns.forEach(function (f) { try { f(o); } catch (e) {} }); }
+  function rtClose() { try { rt.ws && rt.ws.close(); } catch (e) {} }
+  function rtConnect() {
+    if (!rt.on || rt.ws || !configured || !session || !('WebSocket' in window) || navigator.onLine === false) return;
+    token().then(function (tk) {
+      if (rt.ws) return;
+      var ws = new WebSocket(SB_URL.replace(/^http/, 'ws') + '/realtime/v1/websocket?apikey=' + enc(SB_ANON) + '&vsn=1.0.0');
+      var topic = 'realtime:sahel-msgr';
+      rt.ws = ws; rt.tk = tk;
+      function send(o) { try { ws.send(JSON.stringify(o)); } catch (e) {} }
+      ws.onopen = function () {
+        send({ topic: topic, event: 'phx_join', ref: String(++rt.ref), payload: {
+          config: { broadcast: { ack: false, self: false }, presence: { key: '' },
+                    postgres_changes: [{ event: '*', schema: 'public', table: 'kt_messages' }, { event: '*', schema: 'public', table: 'kt_files' }] },
+          access_token: tk } });
+        rt.hb = setInterval(function () {
+          send({ topic: 'phoenix', event: 'heartbeat', payload: {}, ref: String(++rt.ref) });
+          token().then(function (t2) { if (t2 !== rt.tk) { rt.tk = t2; send({ topic: topic, event: 'access_token', payload: { access_token: t2 }, ref: String(++rt.ref) }); } }).catch(function () {});
+        }, 25000);
+      };
+      ws.onmessage = function (ev) {
+        var m; try { m = JSON.parse(ev.data); } catch (e) { return; }
+        if (m.topic !== topic) return;
+        if (m.event === 'phx_reply') {
+          var okk = m.payload && m.payload.status === 'ok';
+          if (okk && !rt.ok) { rt.ok = true; rt.tries = 0; rtEmit({ type: 'status', ok: true }); }
+          if (!okk) { rt.ok = false; rtEmit({ type: 'status', ok: false }); rtClose(); }
+        } else if (m.event === 'postgres_changes') {
+          var d = m.payload && m.payload.data; if (!d) return;
+          rt.events++;
+          rtEmit({ type: 'change', table: d.table, op: d.type, record: d.record || null, old: d.old_record || null });
+        } else if (m.event === 'system' && m.payload && m.payload.status === 'error') {
+          rt.ok = false; rtEmit({ type: 'status', ok: false });
+        } else if (m.event === 'phx_error' || m.event === 'phx_close') { rtClose(); }
+      };
+      ws.onclose = function () {
+        clearInterval(rt.hb); rt.ws = null;
+        if (rt.ok) { rt.ok = false; rtEmit({ type: 'status', ok: false }); }
+        if (rt.on) { clearTimeout(rt.timer); rt.timer = setTimeout(rtConnect, Math.min(30000, 1500 * Math.pow(2, rt.tries++))); }
+      };
+      ws.onerror = function () { try { ws.close(); } catch (e) {} };
+    }).catch(function () { clearTimeout(rt.timer); rt.timer = setTimeout(rtConnect, 8000); });
+  }
+  window.addEventListener('online', function () { rt.tries = 0; rtConnect(); });
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) rtConnect(); });
+
   // ---------- API پیام‌رسان ----------
   window.SahelSB = {
     configured: configured,
     ready: function () { return configured && !!session; },
 
+    // اشتراک در رویدادهای لحظه‌ای؛ fn({type:'change'|'status', ...})
+    onChange: function (fn) { rt.fns.push(fn); rt.on = true; rtConnect(); },
+    realtime: function () { return { ok: rt.ok, events: rt.events }; },
+
     contacts: function () {
       return rest('rpc/kt_chat_contacts', { method: 'POST', body: {} }).then(function (rows) {
         return (rows || []).map(function (r) {
           return { id: String(r.id), name: r.name, initials: r.initials, photo: r.photo, jobTitle: r.job_title,
-                   last: r.last_message || '', unread: Number(r.unread_count) || 0 };
+                   last: r.last_message || '', unread: Number(r.unread_count) || 0,
+                   lastAt: r.last_at || r.last_message_at || r.last_time || r.updated_at || null };
         });
       });
     },
 
-    // پیام‌ها و فایل‌های بین دو نفر، به ترتیب زمان
-    thread: function (uid, cid) {
-      uid = String(uid); cid = String(cid);
+    // پیام‌ها و فایل‌های بین دو نفر، به ترتیب زمان (با وضعیت خوانده‌شدن برای تیک‌ها)
+    thread: function (uid, cid, opt) {
+      uid = String(uid); cid = String(cid); opt = opt || {};
+      var nm = opt.msgs || 120, nf = opt.files || 50;
       var pair = 'or=(and(sender_id.eq.' + enc(uid) + ',receiver_id.eq.' + enc(cid) + '),and(sender_id.eq.' + enc(cid) + ',receiver_id.eq.' + enc(uid) + '))';
+      function q(table, rich, basic, n) {
+        return rest(table + '?select=' + rich + '&' + pair + '&order=created_at.desc&limit=' + n)
+          .catch(function () { return rest(table + '?select=' + basic + '&' + pair + '&order=created_at.desc&limit=' + n); });
+      }
       return Promise.all([
-        rest('kt_messages?select=id,sender_id,text,created_at&' + pair + '&order=created_at.desc&limit=150'),
-        rest('kt_files?select=id,sender_id,file_name,path,legacy_url,created_at&' + pair + '&order=created_at.desc&limit=60')
+        q('kt_messages', 'id,sender_id,text,created_at,read_at', 'id,sender_id,text,created_at', nm),
+        q('kt_files', 'id,sender_id,file_name,path,legacy_url,created_at,read_at,mime_type,size', 'id,sender_id,file_name,path,legacy_url,created_at', nf)
       ]).then(function (r) {
         var msgs = r[0] || [], files = r[1] || [];
         var paths = files.filter(function (f) { return f.path; }).map(function (f) { return f.path; });
         return signPaths(paths).then(function () {
           var items = [];
           msgs.forEach(function (m) {
-            items.push({ key: 'm' + m.id, mine: String(m.sender_id) === uid, type: 'text', text: m.text, time: m.created_at });
+            items.push({ key: 'm' + m.id, mine: String(m.sender_id) === uid, type: 'text', text: m.text, time: m.created_at, read: !!m.read_at });
           });
           files.forEach(function (f) {
             var url = f.legacy_url || (signCache[f.path] && signCache[f.path].url) || '';
-            items.push({ key: 'f' + f.id, mine: String(f.sender_id) === uid, type: 'file', name: f.file_name, url: url, time: f.created_at });
+            items.push({ key: 'f' + f.id, mine: String(f.sender_id) === uid, type: 'file', name: f.file_name, url: url,
+                         size: Number(f.size) || 0, mime: f.mime_type || '', time: f.created_at, read: !!f.read_at });
           });
           items.sort(function (a, b) { return a.time < b.time ? -1 : a.time > b.time ? 1 : 0; });
           return items;
@@ -164,20 +226,33 @@
         body: { sender_id: String(uid), receiver_id: String(cid), text: String(text) } });
     },
 
-    // آپلود مستقیم خود فایل (بدون تبدیل به base64)
-    sendFile: function (uid, cid, file) {
+    // آپلود مستقیم خود فایل (بدون تبدیل به base64) با نوار پیشرفت
+    sendFile: function (uid, cid, file, onProgress) {
       var name = String(file.name || 'file');
       var ext = (name.match(/\.([A-Za-z0-9]{1,8})$/) || [, ''])[1].toLowerCase();
       var path = String(uid) + '/' + Date.now() + '-' + Math.random().toString(36).slice(2, 8) + (ext ? '.' + ext : '');
       var type = file.type || 'application/octet-stream';
       return token().then(function (tk) {
-        return timeoutFetch(SB_URL + '/storage/v1/object/' + BUCKET + '/' + path, {
-          method: 'POST',
-          headers: { apikey: SB_ANON, Authorization: 'Bearer ' + tk, 'Content-Type': type, 'x-upsert': 'false' },
-          body: file
-        }, 180000);
-      }).then(function (r) {
-        if (!r.ok) return r.text().then(function (t) { throw new Error('upload ' + r.status + ' ' + t.slice(0, 100)); });
+        return new Promise(function (resolve, reject) {
+          var x = new XMLHttpRequest();
+          x.open('POST', SB_URL + '/storage/v1/object/' + BUCKET + '/' + path);
+          x.setRequestHeader('apikey', SB_ANON);
+          x.setRequestHeader('Authorization', 'Bearer ' + tk);
+          x.setRequestHeader('Content-Type', type);
+          x.setRequestHeader('x-upsert', 'false');
+          x.timeout = 300000;
+          if (x.upload && typeof onProgress === 'function') {
+            x.upload.onprogress = function (e) { if (e.lengthComputable) { try { onProgress(e.loaded / e.total); } catch (_) {} } };
+          }
+          x.onload = function () {
+            if (x.status >= 200 && x.status < 300) resolve();
+            else reject(new Error('upload ' + x.status + ' ' + String(x.responseText || '').slice(0, 100)));
+          };
+          x.onerror = function () { reject(new Error('network')); };
+          x.ontimeout = function () { reject(new Error('timeout')); };
+          x.send(file);
+        });
+      }).then(function () {
         return rest('kt_files', { method: 'POST', prefer: 'return=minimal',
           body: { sender_id: String(uid), receiver_id: String(cid), file_name: name, mime_type: type, path: path, size: file.size } });
       });
