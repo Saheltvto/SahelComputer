@@ -208,11 +208,11 @@
         return signPaths(paths).then(function () {
           var items = [];
           msgs.forEach(function (m) {
-            items.push({ key: 'm' + m.id, mine: String(m.sender_id) === uid, type: 'text', text: m.text, time: m.created_at, read: !!m.read_at });
+            items.push({ id: m.id, key: 'm' + m.id, mine: String(m.sender_id) === uid, type: 'text', text: m.text, time: m.created_at, read: !!m.read_at });
           });
           files.forEach(function (f) {
             var url = f.legacy_url || (signCache[f.path] && signCache[f.path].url) || '';
-            items.push({ key: 'f' + f.id, mine: String(f.sender_id) === uid, type: 'file', name: f.file_name, url: url,
+            items.push({ id: f.id, path: f.path || '', key: 'f' + f.id, mine: String(f.sender_id) === uid, type: 'file', name: f.file_name, url: url,
                          size: Number(f.size) || 0, mime: f.mime_type || '', time: f.created_at, read: !!f.read_at });
           });
           items.sort(function (a, b) { return a.time < b.time ? -1 : a.time > b.time ? 1 : 0; });
@@ -255,6 +255,19 @@
       }).then(function () {
         return rest('kt_files', { method: 'POST', prefer: 'return=minimal',
           body: { sender_id: String(uid), receiver_id: String(cid), file_name: name, mime_type: type, path: path, size: file.size } });
+      });
+    },
+
+    // حذف پیام یا فایل خودم؛ اگر دسترسی (RLS) اجازه ندهد خطا می‌دهد
+    remove: function (it) {
+      var table = it.type === 'file' ? 'kt_files' : 'kt_messages';
+      return rest(table + '?id=eq.' + enc(String(it.id)), { method: 'DELETE', prefer: 'return=representation' }).then(function (rows) {
+        if (!rows || !rows.length) throw new Error('denied');
+        if (it.type === 'file' && it.path) {
+          token().then(function (tk) {
+            return timeoutFetch(SB_URL + '/storage/v1/object/' + BUCKET + '/' + it.path, { method: 'DELETE', headers: { apikey: SB_ANON, Authorization: 'Bearer ' + tk } });
+          }).catch(function () {});
+        }
       });
     },
 
