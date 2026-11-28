@@ -231,6 +231,7 @@
     thread: function (uid, c) { return window.SahelSB.thread(uid, c.id); },
     send: function (uid, c, text) { return window.SahelSB.send(uid, c.id, text); },
     sendFile: function (uid, c, file, pg) { return window.SahelSB.sendFile(uid, c.id, file, pg); },
+    remove: function (it) { return window.SahelSB.remove(it); },
     markRead: function (uid, c) { return window.SahelSB.markRead(uid, c.id); },
     unread: function () { return window.SahelSB.unread().then(function (r) { return r.chat + r.files; }); }
   };
@@ -796,8 +797,29 @@
       else if (m.url) items.push({ ic: 'dl', label: 'ذخیره / باز کردن', fn: function () { window.open(m.url, '_blank', 'noopener'); } }, { ic: 'copy', label: 'کپی لینک', fn: function () { copyText(m.url); } });
       items.push({ ic: 'fwd', label: 'ارسال به همکار…', fn: function () { openForward(m); } });
       items.push({ ic: 'share', label: 'اشتراک‌گذاری…', fn: function () { shareItem(m); } });
+      if (m.mine && S.be.remove && m.id != null) items.push({ hr: 1 }, { ic: 'trash', label: 'حذف', red: 1, fn: function () { confirmDelete(m); } });
     } else items.push({ ic: 'copy', label: 'کپی متن', fn: function () { copyText(m.body || ''); } });
     showMenu(items, pt, { sheet: sheet, preview: itemPreview(m), alignRight: !!m.mine });
+  }
+
+  function confirmDelete(m) {
+    closeOv();
+    var ov = document.createElement('div'); ov.className = 'mp-ov';
+    ov.innerHTML = '<div class="mp-card"><div class="mp-hd"><button type="button" class="mp-ib" data-x="1" aria-label="بستن">' + ic('close') + '</button><h2>' + (m.type === 'file' ? 'حذف فایل' : 'حذف پیام') + '</h2></div>' +
+      '<div class="mp-keys"><div style="display:block;border:0;line-height:2">این مورد برای هر دو طرف پاک می‌شود و برگشت ندارد.<br><b>' + esc(itemPreview(m)) + '</b></div></div>' +
+      '<div class="foot"><button type="button" class="mp-btn" data-x="1" style="background:var(--m-bar);color:var(--m-text)!important">انصراف</button><button type="button" class="mp-btn" data-ok="1" style="background:var(--m-danger);color:#fff!important">' + ic('trash', 's') + '<span>حذف</span></button></div></div>';
+    ov.onclick = function (e) {
+      if (e.target === ov || e.target.closest('[data-x]')) return closeOv();
+      if (!e.target.closest('[data-ok]')) return;
+      closeOv();
+      S.be.remove(m).then(function () {
+        S.items = S.items.filter(function (x) { return x.key !== m.key; });
+        S.sig = ''; renderThread({}); snack('حذف شد'); refreshThread(false); loadContacts(false);
+      }).catch(function (err) {
+        snack(err && err.message === 'denied' ? 'اجازهٔ حذف در سرور فعال نیست' : 'حذف انجام نشد، دوباره تلاش کنید');
+      });
+    };
+    R.app.appendChild(ov);
   }
 
   function copyText(t) {
@@ -1023,6 +1045,8 @@
     if (ev.op === 'INSERT') {
       if (toMe) onIncoming(String(r.sender_id), ev.table === 'kt_files' ? '📎 ' + (r.file_name || 'فایل') : previewStr(r.text));
       if (S.contact && ((toMe && String(r.sender_id) === S.contact.id) || (fromMe && String(r.receiver_id) === S.contact.id))) kick('t', function () { refreshThread(false); }, 80);
+    } else if (ev.op === 'DELETE') {
+      if (S.contact) kick('t', function () { refreshThread(false); }, 120);
     } else if (ev.op === 'UPDATE') {
       if (fromMe && S.contact && String(r.receiver_id) === S.contact.id) kick('t', function () { refreshThread(false); }, 150);
     }
