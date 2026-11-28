@@ -182,16 +182,25 @@
         var items = [], seen = {};
         ((r[0] && r[0].messages) || []).forEach(function (m, i) {
           var f = parseFileMsg(m.text), mine = String(m.senderId) === String(uid);
-          var rd = m.read === true || m.read === 'true' || m.isRead === true || !!m.readAt || m.seen === true;
-          if (f) { seen[f.u] = 1; items.push({ key: 'g' + m.time + i, mine: mine, type: 'file', name: f.n, url: f.u, size: f.s, time: m.time, read: rd }); }
-          else items.push({ key: 'g' + m.time + i, mine: mine, type: 'text', text: m.text, time: m.time, read: rd });
+          var rd = m.read === 'خوانده شده' || m.read === true || m.read === 'true' || m.isRead === true || !!m.readAt || m.seen === true;
+          if (f) { seen[f.u] = 1; items.push({ id: m.id != null ? m.id : m.time, key: 'g' + m.time + i, mine: mine, type: 'file', name: f.n, url: f.u, size: f.s, time: m.time, read: rd }); }
+          else items.push({ id: m.id != null ? m.id : m.time, key: 'g' + m.time + i, mine: mine, type: 'text', text: m.text, time: m.time, read: rd });
         });
         ((r[1] && r[1].files) || []).forEach(function (f, i) {
           if (f.senderName === c.name && !seen[f.url]) items.push({ key: 'gf' + f.date + i, mine: false, type: 'file', name: f.fileName, url: f.url, time: f.date });
         });
+        var hid = load(KH()) || {};
+        items = items.filter(function (i) { return !hid[hkey(i)]; });
         items.sort(function (a, b) { return new Date(a.time) - new Date(b.time); });
         return items;
       });
+    },
+    // حذف برای همه (اگر اسکریپت گوگل پشتیبانی کند) وگرنه فقط از همین دستگاه پنهان می‌شود
+    remove: function (it) {
+      return sahelApiCall({ action: 'deleteChatMessage', userId: me(), contactId: S.contact && S.contact.id, time: it.time,
+                            text: it.type === 'text' ? it.text : '', isFile: it.type === 'file', fileUrl: it.url || '' })
+        .then(function (d) { if (d && d.success) return 'server'; throw new Error('local'); })
+        .catch(function () { var h = load(KH()) || {}; h[hkey(it)] = 1; save(KH(), h); return 'local'; });
     },
     send: function (uid, c, text) {
       return sahelApiCall({ action: 'sendChatMessage', senderId: uid, receiverId: c.id, text: text }).then(function (d) {
@@ -252,6 +261,8 @@
   var KT = function (cid) { return 'sahel_mg_t_' + me() + '_' + S.be.id + '_' + cid; };
   var KA = function () { return 'sahel_mg_a_' + me() + '_' + S.be.id; };
   var KD = function () { return 'sahel_mg_d_' + me(); };
+  function KH() { return 'sahel_mg_h_' + me(); }
+  function hkey(i) { return i.time + '|' + (i.type === 'file' ? i.url : i.text); }
 
   function pickBackend() {
     var pref = load('sahel_msgr_be') || 'sb', be = BE[pref] || SB;
@@ -812,9 +823,9 @@
       if (e.target === ov || e.target.closest('[data-x]')) return closeOv();
       if (!e.target.closest('[data-ok]')) return;
       closeOv();
-      S.be.remove(m).then(function () {
+      S.be.remove(m).then(function (r) {
         S.items = S.items.filter(function (x) { return x.key !== m.key; });
-        S.sig = ''; renderThread({}); snack('حذف شد'); refreshThread(false); loadContacts(false);
+        S.sig = ''; renderThread({}); snack(r === 'local' ? 'فقط از این دستگاه پاک شد (سرور گوگل حذف را پشتیبانی نمی‌کند)' : 'حذف شد'); refreshThread(false); loadContacts(false);
       }).catch(function (err) {
         snack(err && err.message === 'denied' ? 'اجازهٔ حذف در سرور فعال نیست' : 'حذف انجام نشد، دوباره تلاش کنید');
       });
