@@ -1568,6 +1568,236 @@
       }
     }
     body.chrome-hidden #chromeHandle { top: env(safe-area-inset-top, 0px); }
+
+  /* ==================== پیام‌رسان یکپارچه (گفتگو + فایل) ==================== */
+  #fileTransferBtn { display: none !important; }
+
+  /* آیکن نوار بالا: وقتی مورد نخوانده هست، حلقهٔ ملایم می‌زند */
+  #chatBtn .badge {
+    top: -3px; left: -3px; min-width: 20px; height: 20px; border-radius: 10px;
+    font-size: 11px; box-shadow: 0 0 0 2px var(--glass-bg-strong, #fff);
+  }
+  #chatBtn.has-unread { color: var(--accent); }
+  #chatBtn.has-unread::after {
+    content: ''; position: absolute; inset: -2px; border-radius: 14px;
+    border: 2px solid var(--accent); opacity: 0; pointer-events: none;
+    animation: mgRing 2.2s ease-out infinite;
+  }
+  @keyframes mgRing { 0% { opacity: .65; transform: scale(.92); } 100% { opacity: 0; transform: scale(1.28); } }
+  @media (prefers-reduced-motion: reduce) { #chatBtn.has-unread::after { animation: none; } }
+
+  .chat-panel.mg-panel {
+    width: 400px;
+    height: min(620px, calc(100vh - 110px));
+    max-height: none;
+    flex-direction: column;
+  }
+
+  /* سربرگ */
+  .mg-head { padding: 12px 14px; gap: 10px; }
+  .mg-head .chat-back-btn { width: 34px; height: 34px; flex: none; }
+  .mg-head-avatar {
+    width: 40px; height: 40px; flex: none; font-size: 14px;
+    border: 2px solid rgba(255,255,255,.35);
+  }
+  .mg-head-text { display: flex; flex-direction: column; min-width: 0; line-height: 1.4; }
+  .mg-head-text b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .mg-head-text span { font-size: 11.5px; color: rgba(255,255,255,.78); }
+
+  /* تب‌ها */
+  .mg-tabs {
+    display: flex; gap: 6px; padding: 8px 10px;
+    border-bottom: 1px solid var(--border-light);
+    background: var(--glass-bg-strong);
+  }
+  .mg-tab {
+    flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px;
+    font: inherit; font-size: 13px; font-weight: 700; color: var(--text-muted);
+    padding: 8px 10px; border: 0; border-radius: 12px; background: transparent; cursor: pointer;
+    transition: background .2s ease, color .2s ease;
+  }
+  .mg-tab:hover { background: var(--bg-light); color: var(--text); }
+  .mg-tab.is-active { background: var(--bg-accent); color: var(--teal); }
+  :root[data-theme="dark"] .mg-tab.is-active { color: var(--accent-light); }
+  .mg-pill {
+    min-width: 19px; height: 19px; padding: 0 6px; border-radius: 10px;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 800; color: #fff; background: #0E8A7C;
+  }
+  .mg-pill[hidden] { display: none; }
+  :root[data-theme="dark"] .mg-pill { color: #062B2E; background: var(--accent); }
+
+  /* جستجو */
+  #chatContactsView { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+  .mg-search { position: relative; margin: 8px 10px 4px; }
+  .mg-search svg {
+    position: absolute; top: 50%; inset-inline-start: 12px; transform: translateY(-50%);
+    color: var(--text-muted); pointer-events: none;
+  }
+  .mg-search input {
+    width: 100%; box-sizing: border-box; font: inherit; font-size: 13px; color: var(--text);
+    padding: 9px 36px 9px 12px; border: 1px solid var(--border); border-radius: 14px;
+    background: var(--bg-light); transition: border-color .15s ease, box-shadow .15s ease;
+  }
+  .mg-search input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(47,184,166,.14); }
+
+  /* ردیف گفتگو (شبیه واتساپ) */
+  #chatContactsList { max-height: none; }
+  .chat-contact-row.mg-row { padding: 10px 14px; gap: 12px; border-bottom: 0; box-shadow: inset 0 -1px 0 var(--border-light); }
+  .chat-contact-row.mg-row::after { display: none; }
+  .mg-row .member-avatar { width: 48px; height: 48px; font-size: 15px; }
+  .mg-row-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+  .mg-row-top, .mg-row-bot { display: flex; align-items: center; gap: 8px; min-width: 0; }
+  .mg-row-top b { flex: 1; min-width: 0; font-size: 14px; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .mg-time { flex: none; font-size: 11px; color: var(--text-muted); }
+  .mg-row.has-unread .mg-time { color: #0E8A7C; font-weight: 700; }
+  :root[data-theme="dark"] .mg-row.has-unread .mg-time { color: var(--accent); }
+  .mg-row .chat-contact-last { flex: 1; min-width: 0; max-width: none; font-size: 12.5px; }
+  .mg-row.has-unread .chat-contact-last { color: var(--text); font-weight: 600; }
+  .mg-row.has-unread .mg-row-top b { font-weight: 800; }
+  .mg-count {
+    flex: none; min-width: 21px; height: 21px; padding: 0 6px; border-radius: 11px;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 11.5px; font-weight: 800; color: #fff; background: #0E8A7C;
+    animation: badgePop .3s cubic-bezier(.34,1.56,.64,1);
+  }
+  :root[data-theme="dark"] .mg-count { color: #062B2E; background: var(--accent); }
+  .mg-empty { padding: 34px 16px; text-align: center; color: var(--text-muted); font-size: 13px; }
+
+  /* ===== نمایش فایل‌ها ===== */
+  #mgFilesView { flex: 1; min-height: 0; flex-direction: column; }
+  .mg-files-head {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    padding: 10px 14px; border-bottom: 1px solid var(--border-light);
+  }
+  .mg-files-head b { font-size: 13.5px; color: var(--text); }
+
+  /* دکمهٔ «ارسال فایل»: در هر دو تم کاملاً مشخص (پس‌زمینهٔ پر + حاشیه و سایه) */
+  .mg-send-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    font: inherit; font-size: 13px; font-weight: 800; color: #fff;
+    padding: 8px 16px; border: 0; border-radius: 999px; cursor: pointer;
+    background: linear-gradient(135deg, #1FA392, #0E6F6B);
+    box-shadow: 0 4px 14px rgba(14,111,107,.35);
+    transition: transform .15s ease, box-shadow .15s ease, filter .15s ease;
+  }
+  .mg-send-btn:hover { filter: brightness(1.08); transform: translateY(-1px); }
+  .mg-send-btn:active { transform: scale(.97); }
+  .mg-send-btn.is-open { background: var(--bg-accent); color: var(--teal); box-shadow: inset 0 0 0 1.5px var(--accent); }
+  :root[data-theme="dark"] .mg-send-btn {
+    color: #062B2E; background: var(--accent-light);
+    box-shadow: 0 0 0 1.5px rgba(143,227,211,.55), 0 6px 18px rgba(47,184,166,.40);
+  }
+  :root[data-theme="dark"] .mg-send-btn.is-open { color: var(--accent-light); background: rgba(143,227,211,.14); box-shadow: inset 0 0 0 1.5px var(--accent-light); }
+
+  #fileSendForm { border-bottom: 1px solid var(--border-light); }
+  #fileSendBtn { padding: 12px; font-size: 14px; }
+  #fileSendBtn:disabled { opacity: .6; }
+  :root[data-theme="dark"] #fileSendBtn {
+    color: #062B2E; background: var(--accent-light); font-weight: 800;
+    box-shadow: 0 0 0 1.5px rgba(143,227,211,.55), 0 6px 18px rgba(47,184,166,.35);
+  }
+  :root[data-theme="dark"] .file-upload { border-color: rgba(143,227,211,.5); color: var(--accent-light); background: rgba(143,227,211,.06); }
+  :root[data-theme="dark"] .file-upload:hover { border-color: var(--accent-light); background: rgba(143,227,211,.12); }
+  :root[data-theme="dark"] .file-upload.has-file { border-color: var(--accent); color: var(--text); }
+  :root[data-theme="dark"] .file-chip { border-color: var(--border); }
+  #fileSendStatus { color: var(--text-muted); }
+
+  #fileList { flex: 1; min-height: 0; max-height: none; }
+  .file-item.mg-file { gap: 12px; padding: 10px 14px; border-bottom: 0; box-shadow: inset 0 -1px 0 var(--border-light); }
+  .file-item.mg-file::after { display: none; }
+  .mg-file .member-avatar { width: 42px; height: 42px; font-size: 14px; }
+  .mg-file .file-item-body { display: flex; flex-direction: column; gap: 3px; }
+  .mg-file-line { display: flex; align-items: center; gap: 7px; min-width: 0; }
+  .mg-file-line b { flex: 1; min-width: 0; }
+  .mg-ext {
+    flex: none; font-size: 9.5px; font-weight: 800; letter-spacing: .3px; padding: 2px 6px; border-radius: 6px;
+    color: #fff; background: #5B7C80; direction: ltr;
+  }
+  .mg-ext.t-pdf { background: #D2452F; }
+  .mg-ext.t-xls { background: #1E8A4C; }
+  .mg-ext.t-img { background: #2F7BD6; }
+  .mg-new {
+    flex: none; font-size: 10.5px; font-weight: 800; padding: 3px 9px; border-radius: 999px;
+    color: #fff; background: #0E8A7C;
+  }
+  :root[data-theme="dark"] .mg-new { color: #062B2E; background: var(--accent); }
+  .file-item.unread { background: rgba(47,184,166,.07); }
+
+  /* ===== صفحهٔ گفتگو ===== */
+  .mg-thread-files {
+    display: flex; gap: 8px; overflow-x: auto; padding: 8px 12px;
+    border-bottom: 1px solid var(--border-light); background: var(--glass-bg-strong);
+  }
+  .mg-thread-files[hidden] { display: none; }
+  .mg-thread-files::-webkit-scrollbar { height: 4px; }
+  .mg-fchip {
+    flex: none; display: inline-flex; align-items: center; gap: 6px; max-width: 210px;
+    font: inherit; font-size: 12px; color: var(--text); cursor: pointer;
+    padding: 5px 10px; border: 0; border-radius: 999px; background: var(--bg-accent);
+  }
+  .mg-fchip span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  #chatMessages {
+    background-image: radial-gradient(rgba(47,184,166,.07) 1px, transparent 1px);
+    background-size: 18px 18px; gap: 6px; padding: 14px 14px 10px;
+  }
+  .mg-day {
+    align-self: center; margin: 6px 0; font-size: 11px; padding: 3px 13px; border-radius: 999px;
+    color: var(--text-muted); background: var(--glass-bg-strong); box-shadow: var(--shadow-sm);
+  }
+  .chat-bubble.mg-b { max-width: 84%; padding: 7px 11px 5px; border-radius: 14px; font-size: 13.5px; }
+  .chat-bubble.mg-b:hover { transform: none; }
+  .mg-text { white-space: pre-wrap; }
+  /* در RTL: ارسالی راست (مثل واتساپ)، دریافتی چپ */
+  .chat-bubble.mg-b.chat-bubble-out { align-self: flex-start; border-bottom-right-radius: 14px; border-bottom-left-radius: 14px; border-top-right-radius: 4px; }
+  .chat-bubble.mg-b.chat-bubble-in  { align-self: flex-end;   border-bottom-left-radius: 14px;  border-bottom-right-radius: 14px; border-top-left-radius: 4px; }
+  .chat-bubble.mg-b .chat-bubble-time { text-align: end; margin-top: 2px; }
+  .mg-fcard { display: flex; align-items: center; gap: 10px; min-width: 190px; padding: 4px 0 2px; }
+  .mg-fcard-ico {
+    flex: none; width: 38px; height: 38px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; font-weight: 800; color: #fff; background: rgba(255,255,255,.22); direction: ltr;
+  }
+  .mg-fcard-body { min-width: 0; display: flex; flex-direction: column; }
+  .mg-fcard-body b { font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .mg-fcard-body span { font-size: 11px; opacity: .8; }
+
+  .mg-attach-preview {
+    display: flex; flex-wrap: wrap; gap: 6px; padding: 8px 12px;
+    border-top: 1px solid var(--border-light); background: var(--glass-bg-strong);
+  }
+  .mg-attach-preview[hidden] { display: none; }
+  .mg-attach-preview .file-chip { max-width: 100%; }
+  .mg-attach-note { width: 100%; font-size: 11.5px; color: var(--text-muted); }
+
+  .chat-input-row.mg-composer {
+    gap: 8px; padding: 10px 12px; align-items: flex-end;
+    border-top: 1px solid var(--border-light); background: var(--glass-bg-strong);
+  }
+  .mg-composer textarea { min-height: 42px; padding: 10px 15px; border-radius: 22px; background: var(--bg-light); }
+  .chat-input-row.mg-composer button { width: 42px; height: 42px; }
+  .chat-input-row.mg-composer button.mg-attach {
+    background: transparent; box-shadow: none; color: var(--teal); border: 1.5px solid var(--border);
+  }
+  .chat-input-row.mg-composer button.mg-attach:hover:not(:disabled) { background: rgba(47,184,166,.12); color: var(--accent); transform: none; box-shadow: none; }
+  .mg-composer #chatSendBtn { background: linear-gradient(135deg, #1FA392, #0E6F6B); color: #fff; box-shadow: 0 4px 12px rgba(14,111,107,.35); }
+  .mg-send-ico { transform: scaleX(-1); }  /* جهت هواپیمای کاغذی در راست‌به‌چپ */
+  :root[data-theme="dark"] .mg-composer #chatSendBtn {
+    background: var(--accent-light); color: #062B2E;
+    box-shadow: 0 0 0 1.5px rgba(143,227,211,.55), 0 4px 14px rgba(47,184,166,.40);
+  }
+  :root[data-theme="dark"] .chat-input-row.mg-composer button.mg-attach { color: var(--accent-light); border-color: rgba(143,227,211,.45); }
+  :root[data-theme="dark"] .mg-composer textarea { background: rgba(255,255,255,.07); }
+
+  /* آواتار: همیشه دایره‌ای، حروف اول زیر عکس */
+  .member-avatar .avatar-txt, .topbar-user .avatar .avatar-txt, .pc-avatar .avatar-txt { position: relative; z-index: 0; }
+  .avatar-img { z-index: 1; }
+
+  @media (max-width: 768px) {
+    .chat-panel.mg-panel { height: min(78vh, 640px) !important; }
+  }
+
 </style>
 </head>
 <body>
@@ -1595,15 +1825,14 @@
         <svg class="as-chev" viewBox="0 0 24 24" fill="none"><path d="M6 9L12 15L18 9" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
 
-      <span class="topbar-icon" title="گفتگوی داخلی" id="chatBtn">
-        <svg viewBox="0 0 24 24" fill="none"><path d="M21 11.5C21 16.2 16.97 20 12 20C10.86 20 9.77 19.8 8.77 19.44L4 20.5L5.3 16.6C4.48 15.3 4 13.76 4 12.1C4 7.4 8.03 3.6 12 3.6C16.97 3.6 21 6.8 21 11.5Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+      <!-- پیام‌رسان یکپارچه: گفتگو + فایل در یک آیکن، با شمارندهٔ مجموع نخوانده‌ها -->
+      <span class="topbar-icon" title="پیام‌رسان" id="chatBtn" role="button" tabindex="0" aria-label="پیام‌رسان">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M21 11.5C21 16.2 16.97 20 12 20C10.86 20 9.77 19.8 8.77 19.44L4 20.5L5.3 16.6C4.48 15.3 4 13.76 4 12.1C4 7.4 8.03 3.6 12 3.6C16.97 3.6 21 6.8 21 11.5Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M8.6 10.2H15.4M8.6 13.4H12.8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
         <span class="badge" id="chatBadge" style="display:none;">0</span>
       </span>
 
-      <span class="topbar-icon" title="ارسال و دریافت فایل" id="fileTransferBtn">
-        <svg viewBox="0 0 24 24" fill="none"><path d="M6 9C6 5.7 8.7 3 12 3C15.3 3 18 5.7 18 9C18 14 20 15 20 16H4C4 15 6 14 6 9Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M10 19C10 20.1 10.9 21 12 21C13.1 21 14 20.1 14 19" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-        <span class="badge" id="fileBadge" style="display:none;">0</span>
-      </span>
+      <!-- نگه‌داشته‌شده فقط برای سازگاری با اسکریپت‌های قدیمی؛ دیده نمی‌شود -->
+      <span id="fileTransferBtn" hidden><span class="badge" id="fileBadge" style="display:none;">0</span></span>
 
       <span class="topbar-icon" title="حالت شب و روز" id="themeToggleBtn" aria-label="تغییر حالت روشن و تاریک">
         <svg class="icon-sun" width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.5" stroke="currentColor" stroke-width="1.8"/><path d="M12 2.5V5M12 19V21.5M21.5 12H19M5 12H2.5M18.5 5.5L16.8 7.2M7.2 16.8L5.5 18.5M18.5 18.5L16.8 16.8M7.2 7.2L5.5 5.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
@@ -1685,42 +1914,6 @@
   <!-- منوی تعویض اپ -->
   <div class="app-menu" id="appMenu" role="listbox"></div>
 
-  <div class="file-panel" id="filePanel">
-    <div class="file-panel-head">
-      <b>ارسال و دریافت فایل</b>
-      <button type="button" id="newFileBtn" class="btn-add">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 5V19M5 12H19" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
-        ارسال فایل
-      </button>
-    </div>
-
-    <div id="fileSendForm">
-      <div>
-        <div class="field-label">گیرنده</div>
-        <select id="fileRecipient">
-          <option value="">در حال بارگذاری کاربران...</option>
-        </select>
-      </div>
-      <div>
-        <div class="field-label">فایل‌ها</div>
-        <label class="file-upload" for="fileInput" id="fileUploadLabel">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 16V4M12 4L7 9M12 4L17 9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 16V18C4 19.1 4.9 20 6 20H18C19.1 20 20 19.1 20 18V16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-          <span id="fileInputLabel">انتخاب فایل (چند فایل هم‌زمان ممکن است)</span>
-        </label>
-        <input type="file" id="fileInput" accept=".pdf,.xlsx,.xls,.png,.jpg,.jpeg" multiple style="display:none;">
-        <div id="fileChipsList"></div>
-      </div>
-      <button type="button" id="fileSendBtn">ارسال فایل</button>
-      <span id="fileSendStatus"></span>
-    </div>
-
-    <div id="fileList">
-      <div class="skeleton-row"><div class="skeleton-avatar"></div><div class="skeleton-lines"><div class="skeleton-line long"></div><div class="skeleton-line short"></div></div></div>
-      <div class="skeleton-row"><div class="skeleton-avatar"></div><div class="skeleton-lines"><div class="skeleton-line mid"></div><div class="skeleton-line short"></div></div></div>
-      <div class="skeleton-row"><div class="skeleton-avatar"></div><div class="skeleton-lines"><div class="skeleton-line long"></div><div class="skeleton-line short"></div></div></div>
-    </div>
-  </div>
-
   <div class="members-panel" id="membersPanel">
     <div class="members-panel-head"><b>کارتابل اعضا</b></div>
     <div id="membersList">
@@ -1730,15 +1923,36 @@
     </div>
   </div>
 
-  <div class="chat-panel" id="chatPanel">
-    <div class="chat-panel-head">
-      <button type="button" id="chatBackBtn" class="chat-back-btn" style="display:none;" title="بازگشت به لیست">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M10 6L4 12L10 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  <!-- ==================== پیام‌رسان یکپارچه (گفتگو + فایل) ==================== -->
+  <div class="chat-panel mg-panel" id="chatPanel" role="dialog" aria-label="پیام‌رسان">
+    <div class="chat-panel-head mg-head">
+      <button type="button" id="chatBackBtn" class="chat-back-btn" style="display:none;" title="بازگشت" aria-label="بازگشت">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M9 6L15 12L9 18" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
-      <b id="chatPanelTitle">گفتگوها</b>
+      <div class="member-avatar mg-head-avatar" id="mgHeadAvatar" style="display:none;"></div>
+      <div class="mg-head-text">
+        <b id="chatPanelTitle">پیام‌رسان ساحل</b>
+        <span id="mgHeadSub">گفتگو و فایل‌های داخلی</span>
+      </div>
     </div>
 
+    <div class="mg-tabs" id="mgTabs" role="tablist">
+      <button type="button" class="mg-tab is-active" data-tab="chats" role="tab" aria-selected="true">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M21 11.5C21 16.2 16.97 20 12 20C10.86 20 9.77 19.8 8.77 19.44L4 20.5L5.3 16.6C4.48 15.3 4 13.76 4 12.1C4 7.4 8.03 3.6 12 3.6C16.97 3.6 21 6.8 21 11.5Z" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/></svg>
+        <span>گفتگوها</span><span class="mg-pill" id="mgPillChats" hidden>0</span>
+      </button>
+      <button type="button" class="mg-tab" data-tab="files" role="tab" aria-selected="false">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M14 3H7C5.9 3 5 3.9 5 5V19C5 20.1 5.9 21 7 21H17C18.1 21 19 20.1 19 19V8L14 3Z" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/><path d="M14 3V8H19" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/></svg>
+        <span>فایل‌ها</span><span class="mg-pill" id="mgPillFiles" hidden>0</span>
+      </button>
+    </div>
+
+    <!-- فهرست گفتگوها -->
     <div id="chatContactsView">
+      <div class="mg-search">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="6.5" stroke="currentColor" stroke-width="2"/><path d="M16 16L20 20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <input type="search" id="mgSearch" placeholder="جستجوی همکاران..." autocomplete="off">
+      </div>
       <div id="chatContactsList">
         <div class="skeleton-row"><div class="skeleton-avatar"></div><div class="skeleton-lines"><div class="skeleton-line mid"></div><div class="skeleton-line long"></div></div></div>
         <div class="skeleton-row"><div class="skeleton-avatar"></div><div class="skeleton-lines"><div class="skeleton-line long"></div><div class="skeleton-line short"></div></div></div>
@@ -1746,12 +1960,56 @@
       </div>
     </div>
 
+    <!-- فایل‌ها: دریافت و ارسال -->
+    <div id="mgFilesView" style="display:none;">
+      <div class="mg-files-head">
+        <b>فایل‌های دریافتی</b>
+        <button type="button" id="newFileBtn" class="mg-send-btn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 16V5M12 5L7.5 9.5M12 5L16.5 9.5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 15V18C5 19.1 5.9 20 7 20H17C18.1 20 19 19.1 19 18V15" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+          <span>ارسال فایل</span>
+        </button>
+      </div>
+
+      <div id="fileSendForm">
+        <div>
+          <div class="field-label">گیرنده</div>
+          <select id="fileRecipient">
+            <option value="">در حال بارگذاری کاربران...</option>
+          </select>
+        </div>
+        <div>
+          <div class="field-label">فایل‌ها</div>
+          <label class="file-upload" for="fileInput" id="fileUploadLabel">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 16V4M12 4L7 9M12 4L17 9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 16V18C4 19.1 4.9 20 6 20H18C19.1 20 20 19.1 20 18V16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+            <span id="fileInputLabel">انتخاب فایل (چند فایل هم‌زمان ممکن است)</span>
+          </label>
+          <input type="file" id="fileInput" accept=".pdf,.xlsx,.xls,.png,.jpg,.jpeg" multiple style="display:none;">
+          <div id="fileChipsList"></div>
+        </div>
+        <button type="button" id="fileSendBtn">ارسال فایل</button>
+        <span id="fileSendStatus" role="status"></span>
+      </div>
+
+      <div id="fileList">
+        <div class="skeleton-row"><div class="skeleton-avatar"></div><div class="skeleton-lines"><div class="skeleton-line long"></div><div class="skeleton-line short"></div></div></div>
+        <div class="skeleton-row"><div class="skeleton-avatar"></div><div class="skeleton-lines"><div class="skeleton-line mid"></div><div class="skeleton-line short"></div></div></div>
+        <div class="skeleton-row"><div class="skeleton-avatar"></div><div class="skeleton-lines"><div class="skeleton-line long"></div><div class="skeleton-line short"></div></div></div>
+      </div>
+    </div>
+
+    <!-- صفحهٔ گفتگو -->
     <div id="chatThreadView" style="display:none; flex-direction:column; flex:1; min-height:0;">
+      <div class="mg-thread-files" id="mgThreadFiles" hidden></div>
       <div id="chatMessages"></div>
-      <div class="chat-input-row">
-        <textarea id="chatInput" rows="1" placeholder="پیام یا لینک بنویسید..."></textarea>
-        <button type="button" id="chatSendBtn" title="ارسال">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M21 3L3 10.5L11 12.5M21 3L13.5 21L11 12.5M21 3L11 12.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <div class="mg-attach-preview" id="mgAttachPreview" hidden></div>
+      <div class="chat-input-row mg-composer">
+        <button type="button" id="mgAttachBtn" class="mg-attach" title="پیوست فایل" aria-label="پیوست فایل">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M20 11.5L12.2 19.3C10.3 21.2 7.2 21.2 5.3 19.3C3.4 17.4 3.4 14.3 5.3 12.4L13.4 4.3C14.7 3 16.8 3 18.1 4.3C19.4 5.6 19.4 7.7 18.1 9L10 17.1C9.4 17.7 8.4 17.7 7.8 17.1C7.2 16.5 7.2 15.5 7.8 14.9L15 7.7" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <input type="file" id="mgAttachInput" accept=".pdf,.xlsx,.xls,.png,.jpg,.jpeg" multiple hidden>
+        <textarea id="chatInput" rows="1" placeholder="پیام بنویسید..."></textarea>
+        <button type="button" id="chatSendBtn" title="ارسال" aria-label="ارسال">
+          <svg class="mg-send-ico" width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M21 3L3 10.5L11 12.5M21 3L13.5 21L11 12.5M21 3L11 12.5" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
       </div>
     </div>
