@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>تست سرعت پیام و فایل | ساحل</title>
+<style>
+  :root{--bg:#0B3D42;--card:#fff;--ink:#12302f;--mut:#6b8583;--ok:#1b9b6b;--mid:#d9961a;--bad:#d0482f;--acc:#2FB8A6}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);font-family:Vazirmatn,Tahoma,sans-serif;color:var(--ink);padding:16px}
+  .wrap{max-width:560px;margin:0 auto}
+  h1{color:#fff;font-size:20px;margin:6px 0 14px}
+  .card{background:var(--card);border-radius:16px;padding:16px;margin-bottom:12px}
+  label{display:block;font-size:13px;color:var(--mut);margin:10px 0 4px}
+  input{width:100%;padding:10px;border:1px solid #cfe0de;border-radius:10px;font:inherit;direction:ltr;text-align:left}
+  button{width:100%;margin-top:14px;padding:13px;border:0;border-radius:12px;background:var(--acc);color:#06302c;font:700 15px inherit;font-family:inherit;cursor:pointer}
+  button:disabled{opacity:.6}
+  .row{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #eef4f3;font-size:14px}
+  .row:last-child{border:0}
+  .v{font-weight:700;direction:ltr}
+  .ok{color:var(--ok)}.mid{color:var(--mid)}.bad{color:var(--bad)}
+  .verdict{font-size:15px;line-height:1.9;font-weight:700}
+  small{color:var(--mut)}
+  pre{background:#f3f8f7;border-radius:10px;padding:10px;font-size:12px;white-space:pre-wrap;direction:ltr;text-align:left;margin:8px 0 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>تست سرعت پیام و فایل</h1>
+
+  <div class="card">
+    <label>آدرس Apps Script (همان SAHEL_API_URL)</label>
+    <input id="gas" value="https://script.google.com/macros/s/AKfycbyS2fUQG28Tpr2H2HrKZkql15UO9XJdnFjrwUk80MSQkhbk-JVODdKzLFPBE4jXdTg91g/exec">
+    <label>شناسهٔ کاربر (اختیاری — برای سنجش خواندن پیام‌ها و فایل‌ها)</label>
+    <input id="uid" placeholder="مثلاً 1">
+    <label>آدرس پروژهٔ Supabase (اختیاری — برای مقایسه)</label>
+    <input id="sb" placeholder="https://xxxx.supabase.co">
+    <button id="go">شروع تست</button>
+    <small>تست را روی گوشی همان اعضا و با همان اینترنت خودشان (هم داده، هم وای‌فای) انجام دهید. حدود ۳۰ ثانیه طول می‌کشد.</small>
+  </div>
+
+  <div class="card" id="res" style="display:none">
+    <div id="rows"></div>
+  </div>
+  <div class="card" id="vcard" style="display:none">
+    <div class="verdict" id="verdict"></div>
+    <button id="copy">کپی نتیجه برای ارسال</button>
+    <pre id="raw"></pre>
+  </div>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const fa = (n) => String(n).replace(/\d/g, d => '۰۱۲۳۴۵۶۷۸۹'[d]);
+const out = {};
+
+function cls(ms){ return ms < 700 ? 'ok' : ms < 1500 ? 'mid' : 'bad'; }
+function row(label, ms, note){
+  const d = document.createElement('div');
+  d.className = 'row';
+  const txt = ms == null ? 'ناموفق' : Math.round(ms) + ' ms';
+  d.innerHTML = '<span>' + label + (note ? ' <small>' + note + '</small>' : '') + '</span><span class="v ' + (ms == null ? 'bad' : cls(ms)) + '">' + txt + '</span>';
+  $('rows').appendChild(d);
+}
+const median = (a) => { const s = a.filter(x => x != null).sort((x, y) => x - y); return s.length ? s[Math.floor(s.length / 2)] : null; };
+
+async function timed(fn){
+  const t = performance.now();
+  try { await fn(); return performance.now() - t; } catch (e) { return null; }
+}
+
+async function gasCall(url, payload){
+  const ctrl = new AbortController();
+  const tm = setTimeout(() => ctrl.abort(), 20000);
+  try {
+    const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(payload), signal: ctrl.signal, cache: 'no-store' });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    await r.text();
+  } finally { clearTimeout(tm); }
+}
+
+$('go').onclick = async () => {
+  const gas = $('gas').value.trim(), uid = $('uid').value.trim(), sb = $('sb').value.trim().replace(/\/$/, '');
+  $('go').disabled = true; $('go').textContent = 'در حال تست...';
+  $('rows').innerHTML = ''; $('res').style.display = 'block'; $('vcard').style.display = 'none';
+  const net = (navigator.connection && (navigator.connection.effectiveType || '')) || '-';
+  out.network = net; out.time = new Date().toISOString();
+
+  // ۱) Apps Script: ping (اولین = Cold Start، بقیه = گرم)
+  const pings = [];
+  for (let i = 0; i < 6; i++) pings.push(await timed(() => gasCall(gas, { action: 'ping' })));
+  out.gasCold = pings[0]; out.gasWarm = median(pings.slice(1));
+  row('Apps Script — اولین درخواست', pings[0], '(بیدار شدن سرور)');
+  row('Apps Script — درخواست‌های بعدی', out.gasWarm, '(میانه ۵ بار)');
+
+  // ۲) حجم ۵۰۰ کیلوبایت (شبیه ارسال فایل)
+  const big = 'x'.repeat(500 * 1024);
+  const up = await timed(() => gasCall(gas, { action: 'ping', blob: big }));
+  out.gasUpload500KB = up;
+  row('Apps Script — ارسال ۵۰۰ کیلوبایت', up);
+
+  // ۳) خواندن پیام‌ها / فایل‌ها (اگر شناسه داده شده)
+  if (uid) {
+    out.gasChat = await timed(() => gasCall(gas, { action: 'getChatContacts', userId: uid }));
+    out.gasFiles = await timed(() => gasCall(gas, { action: 'getFiles', userId: uid }));
+    row('Apps Script — خواندن مخاطبین و پیام‌ها', out.gasChat);
+    row('Apps Script — خواندن فایل‌ها', out.gasFiles);
+  }
+
+  // ۴) Supabase (اگر آدرس داده شده): فقط دسترسی و تأخیر شبکه
+  if (sb) {
+    const s = [];
+    for (let i = 0; i < 6; i++) s.push(await timed(() => fetch(sb + '/auth/v1/health', { mode: 'no-cors', cache: 'no-store' })));
+    out.sbFirst = s[0]; out.sbWarm = median(s.slice(1));
+    row('Supabase — اولین درخواست', s[0]);
+    row('Supabase — درخواست‌های بعدی', out.sbWarm, '(میانه ۵ بار)');
+  }
+
+  // نتیجه‌گیری
+  const w = out.gasWarm, c = out.gasCold;
+  let v, color;
+  if (w == null) { v = 'اتصال به Apps Script برقرار نشد. این اینترنت به آن دسترسی ندارد؛ بهتر است به Supabase بروید (اگر آن هم باز شد).'; }
+  else if (w < 700 && (c == null || c < 3000) && (up == null || up < 3500)) { v = 'سرعت Apps Script خوب است. فعلاً همان را نگه دارید و فقط بهینه‌سازی سبک (کش و خواندن چند ردیف آخر) انجام دهید.'; }
+  else if (w < 1500 && (c == null || c < 5000)) { v = 'سرعت متوسط است. با بهینه‌سازی می‌شود کمی بهتر کرد، ولی پیام لحظه‌ای نمی‌شود. اگر اعضا از کندی شاکی‌اند، Supabase بهتر است.'; }
+  else { v = 'Apps Script کند است. پیشنهاد: انتقال پیام و فایل به Supabase.'; }
+  if (sb && out.sbWarm != null && w != null) {
+    v += ' | Supabase: ' + (out.sbWarm < w ? 'سریع‌تر از Apps Script بود.' : 'از Apps Script سریع‌تر نبود (شبکه این اینترنت را بررسی کنید).');
+  } else if (sb && out.sbWarm == null) {
+    v += ' | Supabase روی این اینترنت باز نشد.';
+  }
+  $('verdict').textContent = v;
+  $('raw').textContent = JSON.stringify(out, null, 1);
+  $('vcard').style.display = 'block';
+  $('go').disabled = false; $('go').textContent = 'تست دوباره';
+};
+
+$('copy').onclick = async () => {
+  try { await navigator.clipboard.writeText($('verdict').textContent + '\n' + $('raw').textContent); $('copy').textContent = 'کپی شد ✓'; }
+  catch (e) { const r = document.createRange(); r.selectNode($('raw')); getSelection().removeAllRanges(); getSelection().addRange(r); $('copy').textContent = 'متن را انتخاب و کپی کنید'; }
+};
+</script>
+</body>
+</html>
